@@ -20,17 +20,12 @@ class UserCustomizationScreen extends StatelessWidget {
             onPressed: () {},
           ),
         ],
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(width: 10),
-            Image.asset(
-              'assets/images/audify_logo.png', // ✅ Make sure this exists
-              height: 40,
-              errorBuilder: (context, error, stackTrace) => const Icon(Icons.error, color: Colors.red),
-            ),
-          ],
+        title: Center(
+          child: Image.asset(
+            'assets/images/audify_logo.png', // ✅ Make sure this exists
+            height: 40,
+            errorBuilder: (context, error, stackTrace) => const Icon(Icons.error, color: Colors.red),
+          ),
         ),
       ),
       body: SingleChildScrollView(
@@ -47,7 +42,8 @@ class UserCustomizationScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Container(
-              width: double.infinity,
+              width: double.infinity, // Makes the container take the full width
+              height: 150, // Increased height to make it vertically longer
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.grey[300],
