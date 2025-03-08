@@ -12,8 +12,23 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
+
 subprojects {
     project.evaluationDependsOn(":app")
+}
+
+// Set the NDK version for all subprojects
+subprojects {
+    plugins.withId("com.android.application") {
+        extensions.configure<com.android.build.gradle.BaseExtension> {
+            ndkVersion = "26.3.11579264"
+        }
+    }
+    plugins.withId("com.android.library") {
+        extensions.configure<com.android.build.gradle.BaseExtension> {
+            ndkVersion = "26.3.11579264"
+        }
+    }
 }
 
 tasks.register<Delete>("clean") {
