@@ -43,3 +43,16 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Flutter/Dart/Pub related
+.flutter/
+*.lock  # Ignore lock files like pubspec.lock
+
+# macOS related (if you build for macOS)
+macos/Flutter/ephemeral/
+
+# Windows related (if you build for Windows)
+windows/Flutter/ephemeral/
+
+# Ignore local.properties (contains system-specific paths for Android SDK)
+android/local.properties
