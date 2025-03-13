@@ -10,9 +10,9 @@ class UploadScreen extends StatefulWidget {
 class UploadScreenState extends State<UploadScreen> {
   // Function to handle file upload
   void _uploadFile() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please select a file first')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Please select a file first')));
   }
 
   @override
@@ -70,10 +70,7 @@ class UploadScreenState extends State<UploadScreen> {
           const SizedBox(height: 5),
           const Text(
             'File should be PPTX/PDF',
-            style: TextStyle(
-              color: Color(0xFF4A4A4A),
-              fontFamily: 'Roboto',
-            ),
+            style: TextStyle(color: Color(0xFF4A4A4A), fontFamily: 'Roboto'),
           ),
           const SizedBox(height: 20),
 
@@ -93,7 +90,7 @@ class UploadScreenState extends State<UploadScreen> {
                   Image.asset('assets/images/upload icon.png', height: 50),
                   const SizedBox(height: 10),
                   const Text(
-                    'Max file size 15MB\nDrag or drop your file or tap to select',
+                    'Max file size 5MB\nDrag or drop your file or tap to select',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Color(0xFF4A4A4A),
