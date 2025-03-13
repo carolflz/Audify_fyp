@@ -12,6 +12,7 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
+  file_picker: ^9.0.2
 
 dev_dependencies:
   flutter_test:
@@ -27,3 +28,4 @@ flutter:
     - assets/images/upload icon.png
     - assets/images/green_tick.png
     - assets/images/audio_icon.png
+    - assets/images/file_upload_success.png
