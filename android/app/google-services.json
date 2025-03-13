@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "455607109662",
+    "project_id": "audify-file-upload-5656e",
+    "storage_bucket": "audify-file-upload-5656e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:455607109662:android:2168ae4b6bcf6f7c10060f",
+        "android_client_info": {
+          "package_name": "com.example.audify"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBHm3p--n9tWrtlTtF8JHQS2_bpskSx7Bk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

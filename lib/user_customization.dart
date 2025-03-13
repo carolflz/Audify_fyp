@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 class UserCustomizationScreen extends StatelessWidget {
-  const UserCustomizationScreen({super.key}); // Added `key` as a named parameter
+  const UserCustomizationScreen({
+    super.key,
+  }); // Added `key` as a named parameter
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +26,9 @@ class UserCustomizationScreen extends StatelessWidget {
           child: Image.asset(
             'assets/images/audify_logo.png', // ✅ Make sure this exists
             height: 40,
-            errorBuilder: (context, error, stackTrace) => const Icon(Icons.error, color: Colors.red),
+            errorBuilder:
+                (context, error, stackTrace) =>
+                    const Icon(Icons.error, color: Colors.red),
           ),
         ),
       ),
@@ -81,12 +85,30 @@ class UserCustomizationScreen extends StatelessWidget {
               value: null,
               hint: const Text(
                 'Select Narration Style',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               items: const [
-                DropdownMenuItem(value: 'formal', child: Text('Formal Lecture', style: TextStyle(color: Colors.white))),
-                DropdownMenuItem(value: 'ted', child: Text('TED Talk Style', style: TextStyle(color: Colors.white))),
-                DropdownMenuItem(value: 'casual', child: Text('Casual', style: TextStyle(color: Colors.white))),
+                DropdownMenuItem(
+                  value: 'formal',
+                  child: Text(
+                    'Formal Lecture',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+                DropdownMenuItem(
+                  value: 'ted',
+                  child: Text(
+                    'TED Talk Style',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+                DropdownMenuItem(
+                  value: 'casual',
+                  child: Text('Casual', style: TextStyle(color: Colors.white)),
+                ),
               ],
               onChanged: (value) {},
             ),
@@ -105,11 +127,26 @@ class UserCustomizationScreen extends StatelessWidget {
               value: null,
               hint: const Text(
                 'Choose Voice Preference',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               items: const [
-                DropdownMenuItem(value: 'male', child: Text('Male Voice', style: TextStyle(color: Colors.white))),
-                DropdownMenuItem(value: 'female', child: Text('Female Voice', style: TextStyle(color: Colors.white))),
+                DropdownMenuItem(
+                  value: 'male',
+                  child: Text(
+                    'Male Voice',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+                DropdownMenuItem(
+                  value: 'female',
+                  child: Text(
+                    'Female Voice',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
               ],
               onChanged: (value) {},
             ),
@@ -128,12 +165,24 @@ class UserCustomizationScreen extends StatelessWidget {
               value: null,
               hint: const Text(
                 'Select Language for Audio',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               items: const [
-                DropdownMenuItem(value: 'en', child: Text('English', style: TextStyle(color: Colors.white))),
-                DropdownMenuItem(value: 'zh', child: Text('Chinese', style: TextStyle(color: Colors.white))),
-                DropdownMenuItem(value: 'ms', child: Text('Malay', style: TextStyle(color: Colors.white))),
+                DropdownMenuItem(
+                  value: 'en',
+                  child: Text('English', style: TextStyle(color: Colors.white)),
+                ),
+                DropdownMenuItem(
+                  value: 'zh',
+                  child: Text('Chinese', style: TextStyle(color: Colors.white)),
+                ),
+                DropdownMenuItem(
+                  value: 'ms',
+                  child: Text('Malay', style: TextStyle(color: Colors.white)),
+                ),
               ],
               onChanged: (value) {},
             ),
@@ -143,7 +192,10 @@ class UserCustomizationScreen extends StatelessWidget {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue[900],
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 32,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -153,7 +205,11 @@ class UserCustomizationScreen extends StatelessWidget {
               },
               child: const Text(
                 'Convert to Audio',
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],

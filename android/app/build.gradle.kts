@@ -1,10 +1,13 @@
 plugins {
-    id("com.android.application")
-    id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
-    id("dev.flutter.flutter-gradle-plugin")
-}
 
+  // Add the Google services Gradle plugin
+  id("com.google.gms.google-services")
+  id("com.android.application")
+  id("kotlin-android")
+  id("dev.flutter.flutter-gradle-plugin")
+    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+
+  }
 android {
     namespace = "com.example.audify"
     compileSdk = flutter.compileSdkVersion
@@ -42,3 +45,16 @@ android {
 flutter {
     source = "../.."
 }
+
+
+dependencies {
+  // Import the Firebase BoM
+  implementation(platform("com.google.firebase:firebase-bom:33.10.0"))
+
+
+  // TODO: Add the dependencies for Firebase products you want to use
+  // When using the BoM, don't specify versions in Firebase dependencies
+  // https://firebase.google.com/docs/android/setup#available-libraries
+}
+
+apply(plugin = "com.google.gms.google-services")
