@@ -121,8 +121,8 @@
 //   }
 // }
 import 'package:flutter/material.dart';
-import 'upload_slide.dart'; // <-- Import your upload screen file
-
+import 'upload_slide.dart'; 
+import 'user_customization.dart'; 
 void main() {
   runApp(const MyApp()); // Still keeping as const
 }
@@ -138,8 +138,12 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const UploadScreen(), // <-- Show your UploadScreen here
+      // ✅ Setup initial route and named routes
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const UploadScreen(), // Default home screen
+        '/userCustomization': (context) => const UserCustomizationScreen(), // Customization screen
+      },
     );
   }
 }
-
