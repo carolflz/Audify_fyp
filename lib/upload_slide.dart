@@ -90,7 +90,7 @@ class UploadScreenState extends State<UploadScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Image.asset('assets/images/upload_icon.png', height: 50),
+                  Image.asset('assets/images/upload icon.png', height: 50),
                   const SizedBox(height: 10),
                   const Text(
                     'Max file size 15MB\nDrag or drop your file or tap to select',

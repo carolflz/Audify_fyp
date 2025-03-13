@@ -121,14 +121,14 @@
 //   }
 // }
 import 'package:flutter/material.dart';
-import 'user_customization.dart'; // Ensure this file exists and is correctly imported
+import 'upload_slide.dart'; // <-- Import your upload screen file
 
 void main() {
-  runApp(const MyApp()); // Marked as `const`
+  runApp(const MyApp()); // Still keeping as const
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key}); // Using super parameter
+  const MyApp({super.key}); // Constructor
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +138,8 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: UserCustomizationScreen(), // Removed `const`
+      home: const UploadScreen(), // <-- Show your UploadScreen here
     );
   }
 }
+
