@@ -141,7 +141,7 @@ class MyApp extends StatelessWidget {
       // ✅ Setup initial route and named routes
       initialRoute: '/',
       routes: {
-        '/': (context) => const UploadScreen(), // Default home screen
+        '/': (context) => const UploadSlideScreen(), // Default home screen
         '/userCustomization': (context) => const UserCustomizationScreen(), // Customization screen
       },
     );

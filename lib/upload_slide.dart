@@ -1,43 +1,44 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:mime/mime.dart';
 
-class UploadScreen extends StatefulWidget {
-  const UploadScreen({super.key});
+class UploadSlideScreen extends StatefulWidget {
+  const UploadSlideScreen({super.key});
 
   @override
-  UploadScreenState createState() => UploadScreenState();
+  State<UploadSlideScreen> createState() => _UploadSlideScreenState();
 }
 
-class UploadScreenState extends State<UploadScreen> {
+class _UploadSlideScreenState extends State<UploadSlideScreen> {
   File? selectedFile;
   String? fileName;
 
-  // Function to pick file
+  /// Picks a file (PDF/PPTX) from the system
   Future<void> _pickFile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['pptx', 'pdf'], // Only allow pptx and pdf
+      allowedExtensions: ['pptx', 'pdf'], // Only allow PPTX & PDF
     );
 
+    // Ensure the widget is still in the tree
     if (!mounted) return;
 
     if (result != null && result.files.single.path != null) {
-      File file = File(result.files.single.path!);
-      int fileSizeInBytes = await file.length();
-      double fileSizeInMB = fileSizeInBytes / (1024 * 1024); // Convert to MB
+      final file = File(result.files.single.path!);
+      final fileSizeInBytes = await file.length();
+      final fileSizeInMB = fileSizeInBytes / (1024 * 1024);
 
-      if (!mounted) return;
-
+      // Check if file exceeds 5MB
       if (fileSizeInMB > 5) {
-        // File exceeds 5MB
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Please upload your slide not more than 5MB'),
           ),
         );
       } else {
-        // Valid file
         setState(() {
           selectedFile = file;
           fileName = result.files.single.name;
@@ -45,21 +46,22 @@ class UploadScreenState extends State<UploadScreen> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('File selected: ${result.files.single.name}'),
+            content: Text('File selected: $fileName'),
           ),
         );
       }
     } else {
+      // No file selected
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please upload your slide (in pptx or pdf format)'),
+          content: Text('Please upload your slide (in PPTX or PDF format)'),
         ),
       );
     }
   }
 
-  // Function to handle file upload (Placeholder)
-  void _uploadFile() {
+  /// Uploads the selected file to the Flask API
+  Future<void> _uploadFile() async {
     if (selectedFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -69,20 +71,47 @@ class UploadScreenState extends State<UploadScreen> {
       return;
     }
 
-    // TODO: Implement actual upload to Firebase Storage and get URL
+    // Create the multipart request
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('http://10.0.2.2:5000/extract'),
+    );
 
-    // Show success dialog and navigate to customization
-    _showUploadSuccessDialog();
+    // Detect MIME type
+    final mimeType = lookupMimeType(selectedFile!.path);
+    final fileToUpload = await http.MultipartFile.fromPath(
+      'file',
+      selectedFile!.path,
+      contentType: mimeType != null ? MediaType.parse(mimeType) : null,
+    );
+
+    request.files.add(fileToUpload);
+
+    // Send request
+    final response = await request.send();
+
+    if (response.statusCode == 200) {
+      final responseBody = await response.stream.bytesToString();
+      print('Response: $responseBody');
+      _showUploadSuccessDialog();
+    } else {
+      print('Error: ${response.statusCode}');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Upload failed: ${response.statusCode}')),
+      );
+    }
   }
 
-  // Function to show dialog and navigate
+  /// Shows a dialog when the file is uploaded successfully
   void _showUploadSuccessDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Column(
             children: [
               Image.asset('assets/images/file_upload_success.png', height: 80),
@@ -105,7 +134,7 @@ class UploadScreenState extends State<UploadScreen> {
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.of(context).pop(); // Close dialog
+                  Navigator.of(dialogContext).pop(); // Close dialog
                   Navigator.pushNamed(context, '/userCustomization'); // Navigate
                 },
                 style: ElevatedButton.styleFrom(
@@ -113,9 +142,15 @@ class UploadScreenState extends State<UploadScreen> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 24,
+                  ),
                 ),
-                child: const Text('Proceed to Customize', style: TextStyle(color: Colors.white)),
+                child: const Text(
+                  'Proceed to Customize',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ],
           ),
@@ -124,7 +159,7 @@ class UploadScreenState extends State<UploadScreen> {
     );
   }
 
-  // Function to delete file
+  /// Deletes the selected file
   void _deleteFile() {
     setState(() {
       selectedFile = null;
@@ -155,6 +190,7 @@ class UploadScreenState extends State<UploadScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          // Top Banner
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 15),
@@ -166,22 +202,38 @@ class UploadScreenState extends State<UploadScreen> {
                 const SizedBox(height: 8),
                 const Text(
                   'Listen. Learn. Succeed.',
-                  style: TextStyle(fontSize: 14, color: Color(0xFF4A4A4A), fontFamily: 'Roboto'),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF4A4A4A),
+                    fontFamily: 'Roboto',
+                  ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 40),
+
+          // Title
           const Text(
             'Upload your files',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Roboto', color: Color(0xFF4A4A4A)),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Roboto',
+              color: Color(0xFF4A4A4A),
+            ),
           ),
           const SizedBox(height: 5),
           const Text(
             'File should be PPTX/PDF',
-            style: TextStyle(color: Color(0xFF4A4A4A), fontFamily: 'Roboto'),
+            style: TextStyle(
+              color: Color(0xFF4A4A4A),
+              fontFamily: 'Roboto',
+            ),
           ),
           const SizedBox(height: 20),
+
+          // File Upload Container
           GestureDetector(
             onTap: _pickFile,
             child: Container(
@@ -208,12 +260,19 @@ class UploadScreenState extends State<UploadScreen> {
                         ? const Text(
                             'Max file size 5MB\nDrag or drop your file or tap to select',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Color(0xFF4A4A4A), fontFamily: 'Roboto'),
+                            style: TextStyle(
+                              color: Color(0xFF4A4A4A),
+                              fontFamily: 'Roboto',
+                            ),
                           )
                         : Text(
-                            '$fileName',
+                            fileName!,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontFamily: 'Roboto'),
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Roboto',
+                            ),
                           ),
                   ],
                 ),
@@ -221,37 +280,17 @@ class UploadScreenState extends State<UploadScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _uploadFile,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF03045E),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                child: const Text('Upload File', style: TextStyle(color: Colors.white, fontSize: 16, fontFamily: 'Roboto')),
-              ),
-            ),
+
+          // Upload Button
+          ElevatedButton(
+            onPressed: _uploadFile,
+            child: const Text('Upload File'),
           ),
-          const SizedBox(height: 10),
-          // ✅ Delete button, 50% width and centered
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 80), // Adjust width here
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: fileName != null ? _deleteFile : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red.shade400, // Soft red
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                child: const Text('Delete File', style: TextStyle(color: Colors.white)),
-              ),
-            ),
+
+          // Delete Button
+          ElevatedButton(
+            onPressed: fileName != null ? _deleteFile : null,
+            child: const Text('Delete File'),
           ),
         ],
       ),

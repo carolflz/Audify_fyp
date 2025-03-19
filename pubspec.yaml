@@ -7,12 +7,16 @@ version: 1.0.0+1
 environment:
   sdk: ^3.7.0
 
+
 dependencies:
   flutter:
     sdk: flutter
+  mime: ^2.0.0
 
   cupertino_icons: ^1.0.8
   file_picker: ^9.0.2
+  http: ^0.13.5
+  http_parser: ^4.1.2
 
 dev_dependencies:
   flutter_test:
