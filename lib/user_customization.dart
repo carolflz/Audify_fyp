@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
 
-class UserCustomizationScreen extends StatelessWidget {
-  const UserCustomizationScreen({
-    super.key,
-  }); // Added `key` as a named parameter
+class UserCustomizationScreen extends StatefulWidget {
+  final String extractedText;
+
+  const UserCustomizationScreen({super.key, required this.extractedText});
+
+  @override
+  State<UserCustomizationScreen> createState() => _UserCustomizationScreenState();
+}
+
+class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
+  String? selectedNarrationStyle;
+  String? selectedVoice;
+  String? selectedLanguage;
 
   @override
   Widget build(BuildContext context) {
@@ -24,11 +33,10 @@ class UserCustomizationScreen extends StatelessWidget {
         ],
         title: Center(
           child: Image.asset(
-            'assets/images/audify_logo.png', // ✅ Make sure this exists
+            'assets/images/audify_logo.png',
             height: 40,
-            errorBuilder:
-                (context, error, stackTrace) =>
-                    const Icon(Icons.error, color: Colors.red),
+            errorBuilder: (context, error, stackTrace) =>
+                const Icon(Icons.error, color: Colors.red),
           ),
         ),
       ),
@@ -46,17 +54,21 @@ class UserCustomizationScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Container(
-              width: double.infinity, // Makes the container take the full width
-              height: 150, // Increased height to make it vertically longer
-              padding: const EdgeInsets.all(16),
+              width: double.infinity,
+              height: 150,
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.grey[300],
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text(
-                'This is sample extracted text.', // ✅ Ensure this dynamically updates later
-                style: TextStyle(fontSize: 16),
-                textAlign: TextAlign.center,
+              child: SingleChildScrollView(
+                child: Text(
+                  widget.extractedText.isNotEmpty
+                      ? widget.extractedText
+                      : "No extracted text available",
+                  style: const TextStyle(fontSize: 16),
+                  textAlign: TextAlign.left,
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -72,7 +84,7 @@ class UserCustomizationScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // ✅ Narration Style Dropdown
+            // Narration Style Dropdown
             DropdownButtonFormField<String>(
               decoration: InputDecoration(
                 filled: true,
@@ -82,39 +94,25 @@ class UserCustomizationScreen extends StatelessWidget {
                 ),
               ),
               dropdownColor: Colors.blue[700],
-              value: null,
+              value: selectedNarrationStyle,
               hint: const Text(
                 'Select Narration Style',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
               items: const [
-                DropdownMenuItem(
-                  value: 'formal',
-                  child: Text(
-                    'Formal Lecture',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-                DropdownMenuItem(
-                  value: 'ted',
-                  child: Text(
-                    'TED Talk Style',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-                DropdownMenuItem(
-                  value: 'casual',
-                  child: Text('Casual', style: TextStyle(color: Colors.white)),
-                ),
+                DropdownMenuItem(value: 'formal', child: Text('Formal Lecture', style: TextStyle(color: Colors.white))),
+                DropdownMenuItem(value: 'ted', child: Text('TED Talk Style', style: TextStyle(color: Colors.white))),
+                DropdownMenuItem(value: 'casual', child: Text('Casual', style: TextStyle(color: Colors.white))),
               ],
-              onChanged: (value) {},
+              onChanged: (value) {
+                setState(() {
+                  selectedNarrationStyle = value;
+                });
+              },
             ),
             const SizedBox(height: 12),
 
-            // ✅ Voice Preference Dropdown
+            // Voice Preference Dropdown
             DropdownButtonFormField<String>(
               decoration: InputDecoration(
                 filled: true,
@@ -124,35 +122,24 @@ class UserCustomizationScreen extends StatelessWidget {
                 ),
               ),
               dropdownColor: Colors.cyan[500],
-              value: null,
+              value: selectedVoice,
               hint: const Text(
                 'Choose Voice Preference',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
               items: const [
-                DropdownMenuItem(
-                  value: 'male',
-                  child: Text(
-                    'Male Voice',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-                DropdownMenuItem(
-                  value: 'female',
-                  child: Text(
-                    'Female Voice',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
+                DropdownMenuItem(value: 'male', child: Text('Male Voice', style: TextStyle(color: Colors.white))),
+                DropdownMenuItem(value: 'female', child: Text('Female Voice', style: TextStyle(color: Colors.white))),
               ],
-              onChanged: (value) {},
+              onChanged: (value) {
+                setState(() {
+                  selectedVoice = value;
+                });
+              },
             ),
             const SizedBox(height: 12),
 
-            // ✅ Language Selection Dropdown
+            // Language Selection Dropdown
             DropdownButtonFormField<String>(
               decoration: InputDecoration(
                 filled: true,
@@ -162,46 +149,48 @@ class UserCustomizationScreen extends StatelessWidget {
                 ),
               ),
               dropdownColor: Colors.blue[300],
-              value: null,
+              value: selectedLanguage,
               hint: const Text(
                 'Select Language for Audio',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
               items: const [
-                DropdownMenuItem(
-                  value: 'en',
-                  child: Text('English', style: TextStyle(color: Colors.white)),
-                ),
-                DropdownMenuItem(
-                  value: 'zh',
-                  child: Text('Chinese', style: TextStyle(color: Colors.white)),
-                ),
-                DropdownMenuItem(
-                  value: 'ms',
-                  child: Text('Malay', style: TextStyle(color: Colors.white)),
-                ),
+                DropdownMenuItem(value: 'en', child: Text('English', style: TextStyle(color: Colors.white))),
+                DropdownMenuItem(value: 'zh', child: Text('Chinese', style: TextStyle(color: Colors.white))),
+                DropdownMenuItem(value: 'ms', child: Text('Malay', style: TextStyle(color: Colors.white))),
               ],
-              onChanged: (value) {},
+              onChanged: (value) {
+                setState(() {
+                  selectedLanguage = value;
+                });
+              },
             ),
             const SizedBox(height: 20),
 
-            // ✅ Convert to Audio Button
+            // Convert to Audio Button
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue[900],
-                padding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                  horizontal: 32,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               onPressed: () {
-                // Implement your action here
+                if (selectedNarrationStyle == null || selectedVoice == null || selectedLanguage == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please select all customization options before proceeding')),
+                  );
+                  return;
+                }
+
+                // Use debugPrint instead of print (Flutter's recommended approach)
+                debugPrint("Extracted Text: ${widget.extractedText}");
+                debugPrint("Narration Style: $selectedNarrationStyle");
+                debugPrint("Voice Preference: $selectedVoice");
+                debugPrint("Language: $selectedLanguage");
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Audio conversion started!')),
+                );
               },
               child: const Text(
                 'Convert to Audio',

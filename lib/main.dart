@@ -142,7 +142,7 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const UploadSlideScreen(), // Default home screen
-        '/userCustomization': (context) => const UserCustomizationScreen(), // Customization screen
+        '/userCustomization': (context) => const UserCustomizationScreen(extractedText: '',), // Customization screen
       },
     );
   }
