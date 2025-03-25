@@ -235,7 +235,7 @@ class _UploadSlideScreenState extends State<UploadSlideScreen> {
                     children: [
                       Image.asset(
                         fileName == null
-                            ? 'assets/images/upload_icon.png'
+                            ? 'assets/images/upload icon.png'
                             : 'assets/images/file_upload_success.png',
                         height: 50,
                       ),
