@@ -35,7 +35,9 @@ class _UploadSlideScreenState extends State<UploadSlideScreen> {
 
       if (fileSizeInMB > 5) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please upload a file not more than 5MB')),
+          const SnackBar(
+            content: Text('Please upload a file not more than 5MB'),
+          ),
         );
       } else {
         setState(() {
@@ -43,9 +45,9 @@ class _UploadSlideScreenState extends State<UploadSlideScreen> {
           fileName = result.files.single.name;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('File selected: $fileName')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('File selected: $fileName')));
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -131,9 +133,12 @@ class _UploadSlideScreenState extends State<UploadSlideScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => UserCustomizationScreen(
-                        extractedText: extractedText ?? "", // Ensure this is correctly passed
-                      ),
+                      builder:
+                          (context) => UserCustomizationScreen(
+                            extractedText:
+                                extractedText ??
+                                "", // Ensure this is correctly passed
+                          ),
                     ),
                   );
                 },
@@ -166,9 +171,9 @@ class _UploadSlideScreenState extends State<UploadSlideScreen> {
       fileName = null;
       extractedText = null; // Clear extracted text
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('File removed')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('File removed')));
   }
 
   @override
@@ -241,8 +246,13 @@ class _UploadSlideScreenState extends State<UploadSlideScreen> {
                       ),
                       const SizedBox(height: 10),
                       fileName == null
-                          ? const Text('Max file size 5MB\nTap to select a file')
-                          : Text(fileName!, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          ? const Text(
+                            'Max file size 5MB\nTap to select a file',
+                          )
+                          : Text(
+                            fileName!,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                     ],
                   ),
                 ),
@@ -254,9 +264,15 @@ class _UploadSlideScreenState extends State<UploadSlideScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 children: [
-                  ElevatedButton(onPressed: _uploadFile, child: const Text('Upload File')),
+                  ElevatedButton(
+                    onPressed: _uploadFile,
+                    child: const Text('Upload File'),
+                  ),
                   const SizedBox(height: 10),
-                  ElevatedButton(onPressed: fileName != null ? _deleteFile : null, child: const Text('Delete File')),
+                  ElevatedButton(
+                    onPressed: fileName != null ? _deleteFile : null,
+                    child: const Text('Delete File'),
+                  ),
                 ],
               ),
             ),
