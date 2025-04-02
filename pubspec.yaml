@@ -33,3 +33,5 @@ flutter:
     - assets/images/green_tick.png
     - assets/images/audio_icon.png
     - assets/images/file_upload_success.png
+    - assets/images/audio_convert.png
+    - assets/images/device.png
