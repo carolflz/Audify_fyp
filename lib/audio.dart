@@ -5,10 +5,12 @@ class AudioConversionSuccessScreen extends StatefulWidget {
   const AudioConversionSuccessScreen({super.key});
 
   @override
-  AudioConversionSuccessScreenState createState() => AudioConversionSuccessScreenState();
+  AudioConversionSuccessScreenState createState() =>
+      AudioConversionSuccessScreenState();
 }
 
-class AudioConversionSuccessScreenState extends State<AudioConversionSuccessScreen> {
+class AudioConversionSuccessScreenState
+    extends State<AudioConversionSuccessScreen> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool isPlaying = false;
   Duration duration = Duration.zero;
@@ -66,10 +68,7 @@ class AudioConversionSuccessScreenState extends State<AudioConversionSuccessScre
           icon: Icon(Icons.arrow_back, color: Colors.purple),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Image.asset(
-          'assets/images/audify_logo.png',
-          height: 40,
-        ),
+        title: Image.asset('assets/images/audify_logo.png', height: 40),
         centerTitle: true,
         actions: [
           IconButton(
@@ -110,8 +109,14 @@ class AudioConversionSuccessScreenState extends State<AudioConversionSuccessScre
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("${position.inMinutes}:${(position.inSeconds % 60).toString().padLeft(2, '0')}", style: TextStyle(fontSize: 14)),
-                    Text("${duration.inMinutes}:${(duration.inSeconds % 60).toString().padLeft(2, '0')}", style: TextStyle(fontSize: 14)),
+                    Text(
+                      "${position.inMinutes}:${(position.inSeconds % 60).toString().padLeft(2, '0')}",
+                      style: TextStyle(fontSize: 14),
+                    ),
+                    Text(
+                      "${duration.inMinutes}:${(duration.inSeconds % 60).toString().padLeft(2, '0')}",
+                      style: TextStyle(fontSize: 14),
+                    ),
                   ],
                 ),
               ],
@@ -119,7 +124,11 @@ class AudioConversionSuccessScreenState extends State<AudioConversionSuccessScre
           ),
           SizedBox(height: 20),
           IconButton(
-            icon: Icon(isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled, size: 50, color: Colors.purple),
+            icon: Icon(
+              isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+              size: 50,
+              color: Colors.purple,
+            ),
             onPressed: _togglePlayback,
           ),
           SizedBox(height: 20),
@@ -146,10 +155,7 @@ class AudioConversionSuccessScreenState extends State<AudioConversionSuccessScre
                     textAlign: TextAlign.center,
                   ),
                   SizedBox(width: 10),
-                  Image.asset(
-                    'assets/images/device.png',
-                    height: 40,
-                  ),
+                  Image.asset('assets/images/device.png', height: 40),
                 ],
               ),
             ),
@@ -161,7 +167,5 @@ class AudioConversionSuccessScreenState extends State<AudioConversionSuccessScre
 }
 
 void main() {
-  runApp(MaterialApp(
-    home: AudioConversionSuccessScreen(),
-  ));
+  runApp(MaterialApp(home: AudioConversionSuccessScreen()));
 }

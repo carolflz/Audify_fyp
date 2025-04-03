@@ -6,7 +6,8 @@ class UserCustomizationScreen extends StatefulWidget {
   const UserCustomizationScreen({super.key, required this.extractedText});
 
   @override
-  State<UserCustomizationScreen> createState() => _UserCustomizationScreenState();
+  State<UserCustomizationScreen> createState() =>
+      _UserCustomizationScreenState();
 }
 
 class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
@@ -35,8 +36,9 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
           child: Image.asset(
             'assets/images/audify_logo.png',
             height: 40,
-            errorBuilder: (context, error, stackTrace) =>
-                const Icon(Icons.error, color: Colors.red),
+            errorBuilder:
+                (context, error, stackTrace) =>
+                    const Icon(Icons.error, color: Colors.red),
           ),
         ),
       ),
@@ -97,12 +99,30 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
               value: selectedNarrationStyle,
               hint: const Text(
                 'Select Narration Style',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               items: const [
-                DropdownMenuItem(value: 'formal', child: Text('Formal Lecture', style: TextStyle(color: Colors.white))),
-                DropdownMenuItem(value: 'ted', child: Text('TED Talk Style', style: TextStyle(color: Colors.white))),
-                DropdownMenuItem(value: 'casual', child: Text('Casual', style: TextStyle(color: Colors.white))),
+                DropdownMenuItem(
+                  value: 'formal',
+                  child: Text(
+                    'Formal Lecture',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+                DropdownMenuItem(
+                  value: 'ted',
+                  child: Text(
+                    'TED Talk Style',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+                DropdownMenuItem(
+                  value: 'casual',
+                  child: Text('Casual', style: TextStyle(color: Colors.white)),
+                ),
               ],
               onChanged: (value) {
                 setState(() {
@@ -125,11 +145,26 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
               value: selectedVoice,
               hint: const Text(
                 'Choose Voice Preference',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               items: const [
-                DropdownMenuItem(value: 'male', child: Text('Male Voice', style: TextStyle(color: Colors.white))),
-                DropdownMenuItem(value: 'female', child: Text('Female Voice', style: TextStyle(color: Colors.white))),
+                DropdownMenuItem(
+                  value: 'male',
+                  child: Text(
+                    'Male Voice',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+                DropdownMenuItem(
+                  value: 'female',
+                  child: Text(
+                    'Female Voice',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
               ],
               onChanged: (value) {
                 setState(() {
@@ -152,12 +187,24 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
               value: selectedLanguage,
               hint: const Text(
                 'Select Language for Audio',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               items: const [
-                DropdownMenuItem(value: 'en', child: Text('English', style: TextStyle(color: Colors.white))),
-                DropdownMenuItem(value: 'zh', child: Text('Chinese', style: TextStyle(color: Colors.white))),
-                DropdownMenuItem(value: 'ms', child: Text('Malay', style: TextStyle(color: Colors.white))),
+                DropdownMenuItem(
+                  value: 'en',
+                  child: Text('English', style: TextStyle(color: Colors.white)),
+                ),
+                DropdownMenuItem(
+                  value: 'zh',
+                  child: Text('Chinese', style: TextStyle(color: Colors.white)),
+                ),
+                DropdownMenuItem(
+                  value: 'ms',
+                  child: Text('Malay', style: TextStyle(color: Colors.white)),
+                ),
               ],
               onChanged: (value) {
                 setState(() {
@@ -171,13 +218,24 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue[900],
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 32,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
               onPressed: () {
-                if (selectedNarrationStyle == null || selectedVoice == null || selectedLanguage == null) {
+                if (selectedNarrationStyle == null ||
+                    selectedVoice == null ||
+                    selectedLanguage == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please select all customization options before proceeding')),
+                    const SnackBar(
+                      content: Text(
+                        'Please select all customization options before proceeding',
+                      ),
+                    ),
                   );
                   return;
                 }
