@@ -11,7 +11,6 @@ class UserCustomizationScreen extends StatefulWidget {
 
 class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
   String? selectedNarrationStyle;
-  String? selectedVoice;
   String? selectedLanguage;
 
   @override
@@ -112,33 +111,6 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
             ),
             const SizedBox(height: 12),
 
-            // Voice Preference Dropdown
-            DropdownButtonFormField<String>(
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.cyan[500],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              dropdownColor: Colors.cyan[500],
-              value: selectedVoice,
-              hint: const Text(
-                'Choose Voice Preference',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-              items: const [
-                DropdownMenuItem(value: 'male', child: Text('Male Voice', style: TextStyle(color: Colors.white))),
-                DropdownMenuItem(value: 'female', child: Text('Female Voice', style: TextStyle(color: Colors.white))),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  selectedVoice = value;
-                });
-              },
-            ),
-            const SizedBox(height: 12),
-
             // Language Selection Dropdown
             DropdownButtonFormField<String>(
               decoration: InputDecoration(
@@ -175,17 +147,15 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               onPressed: () {
-                if (selectedNarrationStyle == null || selectedVoice == null || selectedLanguage == null) {
+                if (selectedNarrationStyle == null || selectedLanguage == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Please select all customization options before proceeding')),
                   );
                   return;
                 }
 
-                // Use debugPrint instead of print (Flutter's recommended approach)
                 debugPrint("Extracted Text: ${widget.extractedText}");
                 debugPrint("Narration Style: $selectedNarrationStyle");
-                debugPrint("Voice Preference: $selectedVoice");
                 debugPrint("Language: $selectedLanguage");
 
                 ScaffoldMessenger.of(context).showSnackBar(

@@ -121,8 +121,9 @@
 //   }
 // }
 import 'package:flutter/material.dart';
-import 'upload_slide.dart'; 
-import 'user_customization.dart'; 
+import 'upload_slide.dart';
+import 'user_customization.dart';
+
 void main() {
   runApp(const MyApp()); // Still keeping as const
 }
@@ -135,14 +136,15 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Audify',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
+      theme: ThemeData(primarySwatch: Colors.blue),
       // ✅ Setup initial route and named routes
       initialRoute: '/',
       routes: {
         '/': (context) => const UploadSlideScreen(), // Default home screen
-        '/userCustomization': (context) => const UserCustomizationScreen(extractedText: '',), // Customization screen
+        '/userCustomization':
+            (context) => const UserCustomizationScreen(
+              extractedText: '',
+            ), // Customization screen
       },
     );
   }
