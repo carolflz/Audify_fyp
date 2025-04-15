@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -17,38 +18,37 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
   String? selectedNarrationStyle;
   String? selectedLanguage;
 
-Future<void> downloadExtractedText() async {
-  try {
-    // Request storage permission
-    var status = await Permission.storage.request();
+  Future<void> downloadExtractedText() async {
+    try {
+      // Request storage permission
+      var status = await Permission.storage.request();
 
-    if (status.isGranted) {
-      final downloadsDirectory = Directory('/storage/emulated/0/Download');
+      if (status.isGranted) {
+        final downloadsDirectory = Directory('/storage/emulated/0/Download');
 
-      if (!downloadsDirectory.existsSync()) {
-        downloadsDirectory.createSync(recursive: true);
+        if (!downloadsDirectory.existsSync()) {
+          downloadsDirectory.createSync(recursive: true);
+        }
+
+        final filePath = '${downloadsDirectory.path}/extracted_text.txt';
+        final file = File(filePath);
+
+        await file.writeAsString(widget.extractedText);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('File saved to Downloads folder at:\n$filePath')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Storage permission denied')),
+        );
       }
-
-      final filePath = '${downloadsDirectory.path}/extracted_text.txt';
-      final file = File(filePath);
-
-      await file.writeAsString(widget.extractedText);
-
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('File saved to Downloads folder at:\n$filePath')),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Storage permission denied')),
+        SnackBar(content: Text('Failed to save file: $e')),
       );
     }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Failed to save file: $e')),
-    );
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -85,23 +85,37 @@ Future<void> downloadExtractedText() async {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              height: 150,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: SingleChildScrollView(
-                child: Text(
-                  widget.extractedText.isNotEmpty
-                      ? widget.extractedText
-                      : "No extracted text available",
-                  style: const TextStyle(fontSize: 16),
-                  textAlign: TextAlign.left,
+            Stack(
+              alignment: Alignment.topRight,
+              children: [
+                Container(
+                  width: double.infinity,
+                  height: 150,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Text(
+                      widget.extractedText.isNotEmpty
+                          ? widget.extractedText
+                          : "No extracted text available",
+                      style: const TextStyle(fontSize: 16),
+                      textAlign: TextAlign.left,
+                    ),
+                  ),
                 ),
-              ),
+                IconButton(
+                  icon: const Icon(Icons.copy, size: 20),
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: widget.extractedText));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Text copied to clipboard')),
+                    );
+                  },
+                ),
+              ],
             ),
             const SizedBox(height: 10),
             ElevatedButton.icon(
