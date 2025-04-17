@@ -246,7 +246,8 @@ class AudioConversionSuccessScreenState
 
     // Start the download
     final taskId = await FlutterDownloader.enqueue(
-      url: 'https://www.example.com/audio/sample.mp3', // Replace with your audio file URL
+      url:
+          'https://www.example.com/audio/sample.mp3', // Replace with your audio file URL
       savedDir: dir!.path,
       fileName: 'audio_sample.mp3',
       showNotification: true,
@@ -255,9 +256,9 @@ class AudioConversionSuccessScreenState
 
     // Check if download was successful
     if (taskId != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Download started...")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Download started...")));
     }
   }
 

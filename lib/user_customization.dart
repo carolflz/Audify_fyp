@@ -1,4 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+/*import 'package:path_provider/path_provider.dart';*/
+import 'package:permission_handler/permission_handler.dart';
 
 class UserCustomizationScreen extends StatefulWidget {
   final String extractedText;
@@ -7,13 +11,45 @@ class UserCustomizationScreen extends StatefulWidget {
 
   @override
   State<UserCustomizationScreen> createState() =>
+     
       _UserCustomizationScreenState();
 }
 
 class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
   String? selectedNarrationStyle;
-  String? selectedVoice;
   String? selectedLanguage;
+
+  Future<void> downloadExtractedText() async {
+    try {
+      // Request storage permission
+      var status = await Permission.storage.request();
+
+      if (status.isGranted) {
+        final downloadsDirectory = Directory('/storage/emulated/0/Download');
+
+        if (!downloadsDirectory.existsSync()) {
+          downloadsDirectory.createSync(recursive: true);
+        }
+
+        final filePath = '${downloadsDirectory.path}/extracted_text.txt';
+        final file = File(filePath);
+
+        await file.writeAsString(widget.extractedText);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('File saved to Downloads folder at:\n$filePath')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Storage permission denied')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save file: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,10 +58,6 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
       appBar: AppBar(
         backgroundColor: Colors.lightBlue[100],
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.settings, color: Colors.black87),
-          onPressed: () {},
-        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications, color: Colors.black87),
@@ -55,23 +87,46 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              height: 150,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: SingleChildScrollView(
-                child: Text(
-                  widget.extractedText.isNotEmpty
-                      ? widget.extractedText
-                      : "No extracted text available",
-                  style: const TextStyle(fontSize: 16),
-                  textAlign: TextAlign.left,
+            Stack(
+              alignment: Alignment.topRight,
+              children: [
+                Container(
+                  width: double.infinity,
+                  height: 150,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Text(
+                      widget.extractedText.isNotEmpty
+                          ? widget.extractedText
+                          : "No extracted text available",
+                      style: const TextStyle(fontSize: 16),
+                      textAlign: TextAlign.left,
+                    ),
+                  ),
                 ),
+                IconButton(
+                  icon: const Icon(Icons.copy, size: 20),
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: widget.extractedText));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Text copied to clipboard')),
+                    );
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal[700],
               ),
+              icon: const Icon(Icons.download),
+              label: const Text('Download Extracted Text'),
+              onPressed: downloadExtractedText,
             ),
             const SizedBox(height: 24),
             Row(
@@ -85,8 +140,6 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
               ],
             ),
             const SizedBox(height: 12),
-
-            // Narration Style Dropdown
             DropdownButtonFormField<String>(
               decoration: InputDecoration(
                 filled: true,
@@ -100,28 +153,38 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
               hint: const Text(
                 'Select Narration Style',
                 style: TextStyle(
-                  color: Colors.white,
+                  
+                    color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               items: const [
                 DropdownMenuItem(
-                  value: 'formal',
-                  child: Text(
+                  
+                    value: 'formal',
+                 
+                    child: Text(
                     'Formal Lecture',
-                    style: TextStyle(color: Colors.white),
+                   
+                        style: TextStyle(color: Colors.white),
                   ),
                 ),
                 DropdownMenuItem(
-                  value: 'ted',
-                  child: Text(
+                  
+                    value: 'ted',
+                 
+                    child: Text(
                     'TED Talk Style',
-                    style: TextStyle(color: Colors.white),
+                   
+                        style: TextStyle(color: Colors.white),
                   ),
                 ),
                 DropdownMenuItem(
-                  value: 'casual',
-                  child: Text('Casual', style: TextStyle(color: Colors.white)),
+                  
+                    value: 'casual',
+                 
+                    child: Text('Casual',
+                        style: TextStyle(color: Colors.white)),
                 ),
               ],
               onChanged: (value) {
@@ -188,22 +251,32 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
               hint: const Text(
                 'Select Language for Audio',
                 style: TextStyle(
-                  color: Colors.white,
+                  
+                    color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               items: const [
                 DropdownMenuItem(
-                  value: 'en',
-                  child: Text('English', style: TextStyle(color: Colors.white)),
+                  
+                    value: 'en',
+                 
+                    child: Text('English',
+                        style: TextStyle(color: Colors.white)),
                 ),
                 DropdownMenuItem(
-                  value: 'zh',
-                  child: Text('Chinese', style: TextStyle(color: Colors.white)),
+                  
+                    value: 'zh',
+                 
+                    child: Text('Chinese',
+                        style: TextStyle(color: Colors.white)),
                 ),
                 DropdownMenuItem(
-                  value: 'ms',
-                  child: Text('Malay', style: TextStyle(color: Colors.white)),
+                  
+                    value: 'ms',
+                 
+                    child: Text('Malay',
+                        style: TextStyle(color: Colors.white)),
                 ),
               ],
               onChanged: (value) {
@@ -213,37 +286,38 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
               },
             ),
             const SizedBox(height: 20),
-
-            // Convert to Audio Button
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue[900],
-                padding: const EdgeInsets.symmetric(
+                padding:
+                    const EdgeInsets.symmetric(
                   vertical: 16,
                   horizontal: 32,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  
+                    borderRadius: BorderRadius.circular(8),
                 ),
               ),
               onPressed: () {
                 if (selectedNarrationStyle == null ||
-                    selectedVoice == null ||
+                   
+                   
                     selectedLanguage == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text(
-                        'Please select all customization options before proceeding',
+                      
+                        content: Text(
+                        
+                            'Please select all customization options before proceeding',
                       ),
                     ),
                   );
                   return;
                 }
 
-                // Use debugPrint instead of print (Flutter's recommended approach)
                 debugPrint("Extracted Text: ${widget.extractedText}");
                 debugPrint("Narration Style: $selectedNarrationStyle");
-                debugPrint("Voice Preference: $selectedVoice");
                 debugPrint("Language: $selectedLanguage");
 
                 ScaffoldMessenger.of(context).showSnackBar(
