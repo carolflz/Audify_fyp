@@ -522,18 +522,15 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
                     items: const [
                       DropdownMenuItem(
                         value: 'en',
-                        child:
-                            Text('English', style: TextStyle(color: Colors.white)),
+                        child: Text('English', style: TextStyle(color: Colors.white)),
                       ),
                       DropdownMenuItem(
                         value: 'zh',
-                        child:
-                            Text('Chinese', style: TextStyle(color: Colors.white)),
+                        child: Text('Chinese', style: TextStyle(color: Colors.white)),
                       ),
                       DropdownMenuItem(
-                        value: 'ms',
-                        child:
-                            Text('Malay', style: TextStyle(color: Colors.white)),
+                        value: 'ja', // Changed from 'ms' to 'ja' for Japanese
+                        child: Text('Japanese', style: TextStyle(color: Colors.white)),
                       ),
                     ],
                     onChanged: (value) {
@@ -542,6 +539,7 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
                       });
                     },
                   ),
+
                   const SizedBox(height: 20),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
