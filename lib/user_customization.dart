@@ -10,8 +10,13 @@ import 'audio.dart';
 
 class UserCustomizationScreen extends StatefulWidget {
   final String extractedText;
+  final String fileName; // <-- added
 
-  const UserCustomizationScreen({super.key, required this.extractedText});
+  const UserCustomizationScreen({
+    super.key,
+    required this.extractedText,
+    required this.fileName, // <-- added
+  });
 
   @override
   State<UserCustomizationScreen> createState() => _UserCustomizationScreenState();
@@ -35,7 +40,9 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
         await file.writeAsString(widget.extractedText);
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('File saved to Downloads folder at:\n$filePath')),
+          SnackBar(
+            content: Text('File saved to Downloads folder at:\n$filePath'),
+          ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -43,9 +50,9 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save file: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to save file: $e')));
     }
   }
 
@@ -69,14 +76,14 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
 
     try {
       final uri = Uri.parse('http://10.0.2.2:5000/narrate');
-// Replace with actual backend IP
       final response = await http.post(
         uri,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          "text": widget.extractedText,
-          "narration_style": selectedNarrationStyle,
+          "slide_text": widget.extractedText,
+          "style": selectedNarrationStyle,
           "language": selectedLanguage,
+          "file_name": widget.fileName, // <-- added here
         }),
       );
 
@@ -84,14 +91,21 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
 
       if (response.statusCode == 200) {
         final responseBody = json.decode(response.body);
-        String audioUrl = responseBody['audio_url']; // Ensure this key matches your backend
+        String audioUrl = responseBody['audio_url'];
+        String narratedText = responseBody['narrated_text'];
+        String translatedText = responseBody['translated_text'];
+        String originalText = widget.extractedText;
 
-        // Navigate to audio playback screen
         if (mounted) {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => AudioScreen(audioUrl: audioUrl),
+              builder: (context) => AudioScreen(
+                audioUrl: audioUrl,
+                originalText: originalText,
+                narratedText: narratedText,
+                translatedText: translatedText,
+              ),
             ),
           );
         }
@@ -101,10 +115,10 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
         );
       }
     } catch (e) {
-      Navigator.pop(context); // Close the dialog on error
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      Navigator.pop(context);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
@@ -178,7 +192,9 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
             ),
             const SizedBox(height: 10),
             ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.teal[700]),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal[700],
+              ),
               icon: const Icon(Icons.download),
               label: const Text('Download Extracted Text'),
               onPressed: downloadExtractedText,
@@ -199,22 +215,33 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Colors.blue[700],
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
               dropdownColor: Colors.blue[700],
               value: selectedNarrationStyle,
               hint: const Text(
                 'Select Narration Style',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               items: const [
                 DropdownMenuItem(
                   value: 'formal',
-                  child: Text('Formal Lecture', style: TextStyle(color: Colors.white)),
+                  child: Text(
+                    'Formal Lecture',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
                 DropdownMenuItem(
                   value: 'ted',
-                  child: Text('TED Talk Style', style: TextStyle(color: Colors.white)),
+                  child: Text(
+                    'TED Talk Style',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
                 DropdownMenuItem(
                   value: 'casual',
@@ -228,13 +255,18 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Colors.blue[300],
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
               dropdownColor: Colors.blue[300],
               value: selectedLanguage,
               hint: const Text(
                 'Select Language for Audio',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               items: const [
                 DropdownMenuItem(
@@ -256,7 +288,10 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue[900],
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 32,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),

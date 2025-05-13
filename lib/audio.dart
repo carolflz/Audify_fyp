@@ -218,9 +218,18 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class AudioScreen extends StatefulWidget {
-  final String audioUrl; // URL or filename sent from backend
+  final String audioUrl;
+  final String originalText;
+  final String narratedText;
+  final String translatedText;
 
-  const AudioScreen({super.key, required this.audioUrl});
+  const AudioScreen({
+    super.key,
+    required this.audioUrl,
+    required this.originalText,
+    required this.narratedText,
+    required this.translatedText,
+  });
 
   @override
   State<AudioScreen> createState() => AudioScreenState();
@@ -260,7 +269,7 @@ class AudioScreenState extends State<AudioScreen> {
     if (isPlaying) {
       await _audioPlayer.pause();
     } else {
-      await _audioPlayer.play(UrlSource(widget.audioUrl)); // Play from backend URL
+      await _audioPlayer.play(UrlSource(widget.audioUrl));
     }
     setState(() {
       isPlaying = !isPlaying;
@@ -320,82 +329,101 @@ class AudioScreenState extends State<AudioScreen> {
         ],
       ),
       body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 20),
-          Image.asset('assets/images/audio_convert.png', height: 120),
-          const SizedBox(height: 20),
-          const Text(
-            "Conversion to audio\ncompleted successfully!",
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 30.0),
-            child: Column(
-              children: [
-                Slider(
-                  value: position.inSeconds.toDouble(),
-                  min: 0,
-                  max: duration.inSeconds.toDouble(),
-                  onChanged: (value) async {
-                    final newPosition = Duration(seconds: value.toInt());
-                    await _audioPlayer.seek(newPosition);
-                    await _audioPlayer.resume();
-                    setState(() {
-                      position = newPosition;
-                    });
-                  },
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "${position.inMinutes}:${(position.inSeconds % 60).toString().padLeft(2, '0')}",
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                    Text(
-                      "${duration.inMinutes}:${(duration.inSeconds % 60).toString().padLeft(2, '0')}",
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          IconButton(
-            icon: Icon(
-              isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
-              size: 50,
-              color: Colors.purple,
-            ),
-            onPressed: _togglePlayback,
-          ),
-          const SizedBox(height: 20),
-          GestureDetector(
-            onTap: _downloadAudioFile,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF4285F4),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const Text("Original Text:", style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(widget.originalText, style: const TextStyle(fontSize: 14)),
+                  const SizedBox(height: 15),
+
+                  const Text("Narrated Text:", style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(widget.narratedText, style: const TextStyle(fontSize: 14)),
+                  const SizedBox(height: 15),
+
+                  const Text("Translated Text:", style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(widget.translatedText, style: const TextStyle(fontSize: 14)),
+                  const SizedBox(height: 25),
+
+                  Image.asset('assets/images/audio_convert.png', height: 120),
+                  const SizedBox(height: 20),
+
                   const Text(
-                    "Download to your\nDevice",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    "Conversion to audio\ncompleted successfully!",
                     textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(width: 10),
-                  Image.asset('assets/images/device.png', height: 40),
+                  const SizedBox(height: 20),
+
+                  Slider(
+                    value: position.inSeconds.toDouble(),
+                    min: 0,
+                    max: duration.inSeconds.toDouble(),
+                    onChanged: (value) async {
+                      final newPosition = Duration(seconds: value.toInt());
+                      await _audioPlayer.seek(newPosition);
+                      await _audioPlayer.resume();
+                      setState(() {
+                        position = newPosition;
+                      });
+                    },
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "${position.inMinutes}:${(position.inSeconds % 60).toString().padLeft(2, '0')}",
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      Text(
+                        "${duration.inMinutes}:${(duration.inSeconds % 60).toString().padLeft(2, '0')}",
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  Center(
+                    child: IconButton(
+                      icon: Icon(
+                        isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                        size: 50,
+                        color: Colors.purple,
+                      ),
+                      onPressed: _togglePlayback,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  GestureDetector(
+                    onTap: _downloadAudioFile,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4285F4),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            "Download to your\nDevice",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(width: 10),
+                          Image.asset('assets/images/device.png', height: 40),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

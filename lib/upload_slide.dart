@@ -8,6 +8,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:mime/mime.dart';
 import 'dart:convert';
 import 'user_customization.dart'; // Import the screen
+import 'package:path/path.dart' as path;
 
 class UploadSlideScreen extends StatefulWidget {
   const UploadSlideScreen({super.key});
@@ -19,7 +20,7 @@ class UploadSlideScreen extends StatefulWidget {
 class _UploadSlideScreenState extends State<UploadSlideScreen> {
   File? selectedFile;
   String? fileName;
-  String? extractedText; // Store extracted text
+  String? extractedText;
 
   /// Picks a file (PDF/PPTX) from the system
   Future<void> _pickFile() async {
@@ -28,7 +29,7 @@ class _UploadSlideScreenState extends State<UploadSlideScreen> {
       allowedExtensions: ['pptx', 'pdf'],
     );
 
-    if (!mounted) return; // Ensure widget is still in the tree
+    if (!mounted) return;
 
     if (result != null && result.files.single.path != null) {
       final file = File(result.files.single.path!);
@@ -44,7 +45,9 @@ class _UploadSlideScreenState extends State<UploadSlideScreen> {
       } else {
         setState(() {
           selectedFile = file;
-          fileName = result.files.single.name;
+          fileName = path.basename(
+            result.files.single.path!,
+          ); // ✅ Extract filename here
         });
 
         ScaffoldMessenger.of(
@@ -88,7 +91,7 @@ class _UploadSlideScreenState extends State<UploadSlideScreen> {
       final jsonResponse = jsonDecode(responseBody);
 
       setState(() {
-        extractedText = jsonResponse['extracted_text']; // Store extracted text
+        extractedText = jsonResponse['extracted_text'];
       });
 
       _showUploadSuccessDialog();
@@ -137,9 +140,10 @@ class _UploadSlideScreenState extends State<UploadSlideScreen> {
                     MaterialPageRoute(
                       builder:
                           (context) => UserCustomizationScreen(
-                            extractedText:
-                                extractedText ??
-                                "", // Ensure this is correctly passed
+                            extractedText: extractedText ?? "",
+                            fileName:
+                                fileName ??
+                                "", // ✅ pass filename here too if needed
                           ),
                     ),
                   );
@@ -171,7 +175,7 @@ class _UploadSlideScreenState extends State<UploadSlideScreen> {
     setState(() {
       selectedFile = null;
       fileName = null;
-      extractedText = null; // Clear extracted text
+      extractedText = null;
     });
     ScaffoldMessenger.of(
       context,
@@ -216,7 +220,6 @@ class _UploadSlideScreenState extends State<UploadSlideScreen> {
               ),
             ),
             const SizedBox(height: 40),
-
             const Text(
               'Upload your files',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -224,7 +227,6 @@ class _UploadSlideScreenState extends State<UploadSlideScreen> {
             const SizedBox(height: 5),
             const Text('File should be PPTX/PDF'),
             const SizedBox(height: 20),
-
             GestureDetector(
               onTap: _pickFile,
               child: Container(
@@ -261,7 +263,6 @@ class _UploadSlideScreenState extends State<UploadSlideScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(

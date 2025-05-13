@@ -144,6 +144,7 @@ class MyApp extends StatelessWidget {
         '/userCustomization':
             (context) => const UserCustomizationScreen(
               extractedText: '',
+              fileName: '',
             ), // Customization screen
       },
     );
