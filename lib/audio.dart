@@ -211,68 +211,154 @@
 // ignore_for_file: use_build_context_synchronously
 
 //new, 12.5.2025
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class AudioScreen extends StatefulWidget {
-  final String audioUrl;
-  final String originalText;
-  final String narratedText;
-  final String translatedText;
+  final List<String> slideTexts;
+  final String style;
+  final String language;
+  final String fileName;
 
   const AudioScreen({
     super.key,
-    required this.audioUrl,
-    required this.originalText,
-    required this.narratedText,
-    required this.translatedText,
+    required this.slideTexts,
+    required this.style,
+    required this.language,
+    required this.fileName,
   });
 
   @override
-  State<AudioScreen> createState() => AudioScreenState();
+  State<AudioScreen> createState() => _AudioScreenState();
 }
 
-class AudioScreenState extends State<AudioScreen> {
-  final AudioPlayer _audioPlayer = AudioPlayer();
-  bool isPlaying = false;
-  Duration duration = Duration.zero;
-  Duration position = Duration.zero;
+class _AudioScreenState extends State<AudioScreen> {
+  List<Map<String, String>> _slideResults = [];
+  String? _audioUrl;
+  final List<AudioPlayer> _audioPlayers = [];
+  final List<bool> _isPlaying = [];
+  final List<bool> _isSlideLoading = [];
+  final List<bool> _hasSlideError = [];
+
+  bool _isLoading = true;
+  StreamSubscription<String>? _subscription;
 
   @override
   void initState() {
     super.initState();
-
-    _audioPlayer.onDurationChanged.listen((newDuration) {
-      setState(() {
-        duration = newDuration;
-      });
-    });
-
-    _audioPlayer.onPositionChanged.listen((newPosition) {
-      setState(() {
-        position = newPosition;
-      });
-    });
-
-    _audioPlayer.onPlayerComplete.listen((event) {
-      setState(() {
-        isPlaying = false;
-        position = Duration.zero;
-      });
-    });
+    _startProcessing();
   }
 
-  void _togglePlayback() async {
-    if (isPlaying) {
-      await _audioPlayer.pause();
-    } else {
-      await _audioPlayer.play(UrlSource(widget.audioUrl));
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    for (var player in _audioPlayers) {
+      player.dispose();
     }
+    super.dispose();
+  }
+
+void _startProcessing() async {
+  final uri = Uri.parse("http://10.0.2.2:5000/narrate_stream");
+
+  final client = http.Client();
+  final request = http.Request("POST", uri)
+    ..headers['Content-Type'] = 'application/json'
+    ..body = jsonEncode({
+      "slide_texts": widget.slideTexts,
+      "style": widget.style,
+      "language": widget.language,
+      "file_name": widget.fileName,
+    });
+
+  try {
+    final response = await client.send(request);
+
+    // Check if the response is a successful one
+    if (response.statusCode != 200) {
+      throw Exception("Failed to load stream, status code: ${response.statusCode}");
+    }
+
+    _subscription = response.stream
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen(
+      (line) {
+        print("Received line: $line");  // Debugging line
+        if (line.startsWith('data: ')) {
+          final dataString = line.substring(6).trim();
+          if (dataString == '[DONE]') {
+            setState(() {
+              _isLoading = false;
+            });
+            return;
+          }
+
+          try {
+            final decoded = jsonDecode(dataString);
+            if (decoded.containsKey("audio_url")) {
+              setState(() {
+                _audioUrl = decoded["audio_url"];
+              });
+            } else {
+              setState(() {
+                _slideResults.add({
+                  "original_text": decoded["original_text"] ?? "",
+                  "narrated_text": decoded["narrated_text"] ?? "",
+                  "translated_text": decoded["translated_text"] ?? "",
+                });
+                _audioPlayers.add(AudioPlayer());
+                _isPlaying.add(false);
+                _isSlideLoading.add(false);
+                _hasSlideError.add(false);
+              });
+            }
+          } catch (e) {
+            print("Error decoding data: $e");
+          }
+        }
+      },
+      onError: (error) {
+        print("Stream error: $error");
+        setState(() {
+          _isLoading = false;
+        });
+      },
+      onDone: () {
+        print("Stream finished");
+      },
+    );
+  } catch (e) {
+    print("Error starting stream: $e");
     setState(() {
-      isPlaying = !isPlaying;
+      _isLoading = false;
+    });
+  }
+}
+
+
+
+  void _togglePlayback(int index) async {
+    if (_isPlaying[index]) {
+      await _audioPlayers[index].pause();
+    } else {
+      await _audioPlayers[index].play(UrlSource(_audioUrl!));
+    }
+
+    setState(() {
+      _isPlaying[index] = !_isPlaying[index];
+    });
+
+    _audioPlayers[index].onPlayerComplete.listen((event) {
+      setState(() {
+        _isPlaying[index] = false;
+      });
     });
   }
 
@@ -286,11 +372,10 @@ class AudioScreenState extends State<AudioScreen> {
     }
 
     final dir = await getExternalStorageDirectory();
-
     final taskId = await FlutterDownloader.enqueue(
-      url: widget.audioUrl,
+      url: _audioUrl!,
       savedDir: dir!.path,
-      fileName: 'audify_audio.mp3',
+      fileName: '${widget.fileName}_audio.mp3',
       showNotification: true,
       openFileFromNotification: true,
     );
@@ -302,10 +387,48 @@ class AudioScreenState extends State<AudioScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    _audioPlayer.dispose();
-    super.dispose();
+  Widget _buildSlideCardContent(int index) {
+    final slide = _slideResults[index];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Slide ${index + 1}',
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.blueAccent,
+          ),
+        ),
+        const SizedBox(height: 10),
+        const Text('Original:', style: TextStyle(fontWeight: FontWeight.bold)),
+        Text(slide["original_text"] ?? ''),
+        const SizedBox(height: 10),
+        const Text('Narrated:', style: TextStyle(fontWeight: FontWeight.bold)),
+        Text(slide["narrated_text"] ?? ''),
+        const SizedBox(height: 10),
+        const Text('Translated:', style: TextStyle(fontWeight: FontWeight.bold)),
+        Text(slide["translated_text"] ?? ''),
+        const SizedBox(height: 15),
+        if (_audioUrl != null)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () => _togglePlayback(index),
+                icon: Icon(_isPlaying[index]
+                    ? Icons.pause_circle_filled
+                    : Icons.play_circle_fill),
+                label: Text(_isPlaying[index] ? 'Pause' : 'Play Audio'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.purple,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
   }
 
   @override
@@ -322,114 +445,35 @@ class AudioScreenState extends State<AudioScreen> {
         title: Image.asset('assets/images/audify_logo.png', height: 40),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications, color: Colors.purple),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("Original Text:", style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(widget.originalText, style: const TextStyle(fontSize: 14)),
-                  const SizedBox(height: 15),
-
-                  const Text("Narrated Text:", style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(widget.narratedText, style: const TextStyle(fontSize: 14)),
-                  const SizedBox(height: 15),
-
-                  const Text("Translated Text:", style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(widget.translatedText, style: const TextStyle(fontSize: 14)),
-                  const SizedBox(height: 25),
-
-                  Image.asset('assets/images/audio_convert.png', height: 120),
-                  const SizedBox(height: 20),
-
-                  const Text(
-                    "Conversion to audio\ncompleted successfully!",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 20),
-
-                  Slider(
-                    value: position.inSeconds.toDouble(),
-                    min: 0,
-                    max: duration.inSeconds.toDouble(),
-                    onChanged: (value) async {
-                      final newPosition = Duration(seconds: value.toInt());
-                      await _audioPlayer.seek(newPosition);
-                      await _audioPlayer.resume();
-                      setState(() {
-                        position = newPosition;
-                      });
-                    },
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "${position.inMinutes}:${(position.inSeconds % 60).toString().padLeft(2, '0')}",
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                      Text(
-                        "${duration.inMinutes}:${(duration.inSeconds % 60).toString().padLeft(2, '0')}",
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  Center(
-                    child: IconButton(
-                      icon: Icon(
-                        isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
-                        size: 50,
-                        color: Colors.purple,
-                      ),
-                      onPressed: _togglePlayback,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  GestureDetector(
-                    onTap: _downloadAudioFile,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF4285F4),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text(
-                            "Download to your\nDevice",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(width: 10),
-                          Image.asset('assets/images/device.png', height: 40),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+          if (_audioUrl != null)
+            IconButton(
+              icon: const Icon(Icons.download, color: Colors.green),
+              onPressed: _downloadAudioFile,
             ),
-          ),
         ],
       ),
+      body: _isLoading && _slideResults.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _slideResults.length,
+              itemBuilder: (context, index) {
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 500),
+                  child: Card(
+                    key: ValueKey("slide_$index"),
+                    margin: const EdgeInsets.symmetric(vertical: 12),
+                    elevation: 4,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: _isSlideLoading.length <= index || !_isSlideLoading[index]
+                          ? _buildSlideCardContent(index)
+                          : const Center(child: CircularProgressIndicator()),
+                    ),
+                  ),
+                );
+              },
+            ),
     );
   }
 }

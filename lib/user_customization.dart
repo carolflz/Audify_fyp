@@ -1,21 +1,17 @@
-// ignore_for_file: use_build_context_synchronously
-
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
 import 'package:permission_handler/permission_handler.dart';
 import 'audio.dart';
 
 class UserCustomizationScreen extends StatefulWidget {
   final String extractedText;
-  final String fileName; // <-- added
+  final String fileName;
 
   const UserCustomizationScreen({
     super.key,
     required this.extractedText,
-    required this.fileName, // <-- added
+    required this.fileName,
   });
 
   @override
@@ -25,6 +21,15 @@ class UserCustomizationScreen extends StatefulWidget {
 class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
   String? selectedNarrationStyle;
   String? selectedLanguage;
+
+  late List<String> slideTexts;
+
+  @override
+  void initState() {
+    super.initState();
+    // Split extractedText into slides assuming '\n---\n' as separator (you can adjust as needed)
+    slideTexts = widget.extractedText.split(RegExp(r'\n\s*\n+'));
+  }
 
   Future<void> downloadExtractedText() async {
     try {
@@ -56,70 +61,21 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
     }
   }
 
-  Future<void> sendToBackendAndNavigate() async {
+  // ✅ Updated: Only navigate and pass data — no backend call here
+  void sendToBackendAndNavigate() {
     if (selectedNarrationStyle == null || selectedLanguage == null) return;
 
-    // Show loading dialog
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const AlertDialog(
-        content: Row(
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 20),
-            Expanded(child: Text("Generating audio...")),
-          ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AudioScreen(
+          slideTexts: slideTexts,
+          style: selectedNarrationStyle!,
+          language: selectedLanguage!,
+          fileName: widget.fileName,
         ),
       ),
     );
-
-    try {
-      final uri = Uri.parse('http://10.0.2.2:5000/narrate');
-      final response = await http.post(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          "slide_text": widget.extractedText,
-          "style": selectedNarrationStyle,
-          "language": selectedLanguage,
-          "file_name": widget.fileName, // <-- added here
-        }),
-      );
-
-      Navigator.pop(context); // Close the loading dialog
-
-      if (response.statusCode == 200) {
-        final responseBody = json.decode(response.body);
-        String audioUrl = responseBody['audio_url'];
-        String narratedText = responseBody['narrated_text'];
-        String translatedText = responseBody['translated_text'];
-        String originalText = widget.extractedText;
-
-        if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => AudioScreen(
-                audioUrl: audioUrl,
-                originalText: originalText,
-                narratedText: narratedText,
-                translatedText: translatedText,
-              ),
-            ),
-          );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to convert text to audio')),
-        );
-      }
-    } catch (e) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
-    }
   }
 
   @override
