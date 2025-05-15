@@ -454,26 +454,32 @@ void _startProcessing() async {
       ),
       body: _isLoading && _slideResults.isEmpty
           ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
+          : PageView.builder(
               itemCount: _slideResults.length,
               itemBuilder: (context, index) {
-                return AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 500),
-                  child: Card(
-                    key: ValueKey("slide_$index"),
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    elevation: 4,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: _isSlideLoading.length <= index || !_isSlideLoading[index]
-                          ? _buildSlideCardContent(index)
-                          : const Center(child: CircularProgressIndicator()),
+                return Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 500),
+                    child: Card(
+                      key: ValueKey("slide_$index"),
+                      margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                      elevation: 4,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: SingleChildScrollView(
+                          child: _isSlideLoading.length <= index || !_isSlideLoading[index]
+                              ? _buildSlideCardContent(index)
+                              : const Center(child: CircularProgressIndicator()),
+                        ),
+                      ),
                     ),
                   ),
                 );
               },
+
             ),
+
     );
   }
 }
