@@ -306,6 +306,8 @@
 //   }
 // }
 
+// ignore_for_file: prefer_final_fields, avoid_print, use_build_context_synchronously, sized_box_for_whitespace
+
 //new: 16/5/25
 import 'dart:async';
 import 'dart:convert';
@@ -315,6 +317,10 @@ import 'package:http/http.dart' as http;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+
+// Import your upload screen
+import 'upload_slide.dart';
 
 class AudioScreen extends StatefulWidget {
   final List<String> slideTexts;
@@ -346,10 +352,21 @@ class _AudioScreenState extends State<AudioScreen> {
   final AudioPlayer _fullAudioPlayer = AudioPlayer();
   bool _isFullAudioPlaying = false;
 
+  AndroidDeviceInfo? androidInfo;
+
   @override
   void initState() {
     super.initState();
+    _initAndroidVersion();
     _startProcessing();
+  }
+
+  void _initAndroidVersion() async {
+    final deviceInfo = DeviceInfoPlugin();
+    final info = await deviceInfo.androidInfo;
+    setState(() {
+      androidInfo = info;
+    });
   }
 
   @override
@@ -363,15 +380,14 @@ class _AudioScreenState extends State<AudioScreen> {
     final uri = Uri.parse("http://10.0.2.2:5000/narrate_stream");
 
     final client = http.Client();
-    final request =
-        http.Request("POST", uri)
-          ..headers['Content-Type'] = 'application/json'
-          ..body = jsonEncode({
-            "slide_texts": widget.slideTexts,
-            "style": widget.style,
-            "language": widget.language,
-            "file_name": widget.fileName,
-          });
+    final request = http.Request("POST", uri)
+      ..headers['Content-Type'] = 'application/json'
+      ..body = jsonEncode({
+        "slide_texts": widget.slideTexts,
+        "style": widget.style,
+        "language": widget.language,
+        "file_name": widget.fileName,
+      });
 
     try {
       final response = await client.send(request);
@@ -384,45 +400,45 @@ class _AudioScreenState extends State<AudioScreen> {
           .transform(utf8.decoder)
           .transform(const LineSplitter())
           .listen(
-            (line) {
-              if (line.startsWith('data: ')) {
-                final dataString = line.substring(6).trim();
-                if (dataString == '[DONE]') {
-                  setState(() {
-                    _isLoading = false;
-                    _isGeneratingFullAudio = false;
-                  });
-                  return;
-                }
-
-                try {
-                  final decoded = jsonDecode(dataString);
-                  if (decoded.containsKey("audio_url")) {
-                    setState(() {
-                      _audioUrl = decoded["audio_url"];
-                    });
-                  } else {
-                    setState(() {
-                      _slideResults.add({
-                        "original_text": decoded["original_text"] ?? "",
-                        "narrated_text": decoded["narrated_text"] ?? "",
-                        "translated_text": decoded["translated_text"] ?? "",
-                      });
-                    });
-                  }
-                } catch (e) {
-                  print("Error decoding line: $e");
-                }
-              }
-            },
-            onError: (e) {
-              print("Stream error: $e");
+        (line) {
+          if (line.startsWith('data: ')) {
+            final dataString = line.substring(6).trim();
+            if (dataString == '[DONE]') {
               setState(() {
                 _isLoading = false;
                 _isGeneratingFullAudio = false;
               });
-            },
-          );
+              return;
+            }
+
+            try {
+              final decoded = jsonDecode(dataString);
+              if (decoded.containsKey("audio_url")) {
+                setState(() {
+                  _audioUrl = decoded["audio_url"];
+                });
+              } else {
+                setState(() {
+                  _slideResults.add({
+                    "original_text": decoded["original_text"] ?? "",
+                    "narrated_text": decoded["narrated_text"] ?? "",
+                    "translated_text": decoded["translated_text"] ?? "",
+                  });
+                });
+              }
+            } catch (e) {
+              print("Error decoding line: $e");
+            }
+          }
+        },
+        onError: (e) {
+          print("Stream error: $e");
+          setState(() {
+            _isLoading = false;
+            _isGeneratingFullAudio = false;
+          });
+        },
+      );
     } catch (e) {
       print("Error starting stream: $e");
       setState(() {
@@ -460,41 +476,61 @@ class _AudioScreenState extends State<AudioScreen> {
   }
 
   Future<void> _downloadAudioFile() async {
-    var status = await Permission.storage.request();
-    if (!status.isGranted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Storage permission required")),
-      );
-      return;
+    if (_audioUrl == null) return;
+
+    if (Platform.isAndroid) {
+      if (await Permission.storage.request().isDenied) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Storage permission required")),
+        );
+        return;
+      }
+
+      if ((androidInfo?.version.sdkInt ?? 0) >= 30) {
+        var manageStorageStatus = await Permission.manageExternalStorage.request();
+        if (!manageStorageStatus.isGranted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Manage External Storage permission required")),
+          );
+          return;
+        }
+      }
     }
 
-    final fileName = '${widget.fileName}_audio.mp3';
     final dirPath = '/storage/emulated/0/Download';
+    final fileName = '${widget.fileName}_audio.mp3';
+    final savedPath = '$dirPath/$fileName';
 
-    final taskId = await FlutterDownloader.enqueue(
-      url: _audioUrl!,
-      savedDir: dirPath,
-      fileName: fileName,
-      showNotification: true,
-      openFileFromNotification: true,
-    );
+    try {
+      final taskId = await FlutterDownloader.enqueue(
+        url: _audioUrl!,
+        savedDir: dirPath,
+        fileName: fileName,
+        showNotification: true,
+        openFileFromNotification: true,
+      );
 
-    setState(() {
-      _localAudioPath = '$dirPath/$fileName';
-    });
+      setState(() {
+        _localAudioPath = savedPath;
+      });
 
-    if (taskId != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Download started: $fileName")));
+      if (taskId != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Download started: $fileName")),
+        );
+      }
+    } catch (e) {
+      print("Download error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Download failed")),
+      );
     }
   }
 
   Widget _buildTopControls() {
     String statusText = "";
     if (_isGeneratingFullAudio) {
-      statusText =
-          "Audio is generating (Slide ${_slideResults.length} / ${widget.slideTexts.length})";
+      statusText = "Audio is generating (Slide ${_slideResults.length} / ${widget.slideTexts.length})";
     } else if (_audioUrl != null) {
       statusText = "Full audio is generated successfully";
     }
@@ -515,13 +551,8 @@ class _AudioScreenState extends State<AudioScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             ElevatedButton.icon(
-              onPressed:
-                  _audioUrl != null || _localAudioPath != null
-                      ? _toggleFullAudio
-                      : null,
-              icon: Icon(
-                _isFullAudioPlaying ? Icons.pause : Icons.play_arrow,
-              ),
+              onPressed: _audioUrl != null || _localAudioPath != null ? _toggleFullAudio : null,
+              icon: Icon(_isFullAudioPlaying ? Icons.pause : Icons.play_arrow),
               label: const Text("Play Full"),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
@@ -586,15 +617,11 @@ class _AudioScreenState extends State<AudioScreen> {
           children: [
             IconButton(
               icon: const Icon(Icons.arrow_back_ios),
-              onPressed: _currentIndex > 0
-                  ? () => setState(() => _currentIndex--)
-                  : null,
+              onPressed: _currentIndex > 0 ? () => setState(() => _currentIndex--) : null,
             ),
             IconButton(
               icon: const Icon(Icons.arrow_forward_ios),
-              onPressed: _currentIndex < _slideResults.length - 1
-                  ? () => setState(() => _currentIndex++)
-                  : null,
+              onPressed: _currentIndex < _slideResults.length - 1 ? () => setState(() => _currentIndex++) : null,
             ),
           ],
         ),
@@ -613,8 +640,15 @@ class _AudioScreenState extends State<AudioScreen> {
         backgroundColor: const Color(0xFFDDF1FF),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.purple),
-          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.home, color: Colors.purple),
+          tooltip: "Go to Home",
+          onPressed: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const UploadSlideScreen()),
+              (Route<dynamic> route) => false,
+            );
+          },
         ),
         title: Image.asset('assets/images/audify_logo.png', height: 40),
         centerTitle: true,

@@ -190,15 +190,8 @@ class _UploadSlideScreenState extends State<UploadSlideScreen> {
         backgroundColor: const Color(0xFFE4FAFF),
         elevation: 0,
         automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications, color: Colors.blue),
-            onPressed: () {
-              // TODO: Implement notifications
-            },
-          ),
-        ],
       ),
+
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
