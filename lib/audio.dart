@@ -1,100 +1,270 @@
-// // old 
+//new, 12.5.2025
+// import 'dart:async';
+// import 'dart:convert';
 // import 'package:flutter/material.dart';
+// import 'package:http/http.dart' as http;
 // import 'package:audioplayers/audioplayers.dart';
 // import 'package:flutter_downloader/flutter_downloader.dart';
 // import 'package:path_provider/path_provider.dart';
 // import 'package:permission_handler/permission_handler.dart';
 
-// class AudioConversionSuccessScreen extends StatefulWidget {
-//   const AudioConversionSuccessScreen({super.key});
+// class AudioScreen extends StatefulWidget {
+//   final List<String> slideTexts;
+//   final String style;
+//   final String language;
+//   final String fileName;
+
+//   const AudioScreen({
+//     super.key,
+//     required this.slideTexts,
+//     required this.style,
+//     required this.language,
+//     required this.fileName,
+//   });
 
 //   @override
-//   AudioConversionSuccessScreenState createState() =>
-//       AudioConversionSuccessScreenState();
+//   State<AudioScreen> createState() => _AudioScreenState();
 // }
 
-// class AudioConversionSuccessScreenState
-//     extends State<AudioConversionSuccessScreen> {
-//   final AudioPlayer _audioPlayer = AudioPlayer();
-//   bool isPlaying = false;
-//   Duration duration = Duration.zero;
-//   Duration position = Duration.zero;
+// class _AudioScreenState extends State<AudioScreen> {
+//   List<Map<String, String>> _slideResults = [];
+//   String? _audioUrl;
+//   final List<AudioPlayer> _audioPlayers = [];
+//   final List<bool> _isPlaying = [];
+//   final List<bool> _isSlideLoading = [];
+//   final List<bool> _hasSlideError = [];
+//   bool _isLoading = true;
+//   int _currentIndex = 0;
+//   bool _isGeneratingFullAudio = true;
+//   StreamSubscription<String>? _subscription;
 
 //   @override
 //   void initState() {
 //     super.initState();
-
-//     _audioPlayer.onDurationChanged.listen((newDuration) {
-//       setState(() {
-//         duration = newDuration;
-//       });
-//     });
-
-//     _audioPlayer.onPositionChanged.listen((newPosition) {
-//       setState(() {
-//         position = newPosition;
-//       });
-//     });
-
-//     _audioPlayer.onPlayerComplete.listen((event) {
-//       setState(() {
-//         isPlaying = false;
-//         position = Duration.zero;
-//       });
-//     });
-//   }
-
-//   // Play or pause the audio
-//   void _togglePlayback() async {
-//     if (isPlaying) {
-//       await _audioPlayer.pause();
-//     } else {
-//       await _audioPlayer.play(AssetSource('audio/sample.mp3'));
-//     }
-//     setState(() {
-//       isPlaying = !isPlaying;
-//     });
-//   }
-
-//   // Download audio file to local storage (Files app)
-//   Future<void> _downloadAudioFile() async {
-//     // Request storage permission
-//     var status = await Permission.storage.request();
-//     if (!status.isGranted) {
-//       // Handle permission denied
-//       if (mounted) {
-//         ScaffoldMessenger.of(context).showSnackBar(
-//           SnackBar(content: Text("Storage permission is required to download")),
-//         );
-//       }
-//       return;
-//     }
-
-//     // Get the local directory to save the file
-//     final dir = await getExternalStorageDirectory();
-
-//     // Start the download
-//     final taskId = await FlutterDownloader.enqueue(
-//       url:
-//           'https://www.example.com/audio/sample.mp3', // Replace with your audio file URL
-//       savedDir: dir!.path,
-//       fileName: 'audio_sample.mp3',
-//       showNotification: true,
-//       openFileFromNotification: true,
-//     );
-
-//     // Check if download was successful
-//     if (taskId != null && mounted) {
-//       ScaffoldMessenger.of(
-//         context,
-//       ).showSnackBar(SnackBar(content: Text("Download started...")));
-//     }
+//     _startProcessing();
 //   }
 
 //   @override
 //   void dispose() {
-//     _audioPlayer.dispose();
+//     _subscription?.cancel();
+//     for (var player in _audioPlayers) {
+//       player.dispose();
+//     }
 //     super.dispose();
+//   }
+
+//   void _startProcessing() async {
+//     final uri = Uri.parse("http://10.0.2.2:5000/narrate_stream");
+
+//     final client = http.Client();
+//     final request = http.Request("POST", uri)
+//       ..headers['Content-Type'] = 'application/json'
+//       ..body = jsonEncode({
+//         "slide_texts": widget.slideTexts,
+//         "style": widget.style,
+//         "language": widget.language,
+//         "file_name": widget.fileName,
+//       });
+
+//     try {
+//       final response = await client.send(request);
+
+//       if (response.statusCode != 200) {
+//         throw Exception("Failed to load stream, status code: ${response.statusCode}");
+//       }
+
+//       _subscription = response.stream
+//           .transform(utf8.decoder)
+//           .transform(const LineSplitter())
+//           .listen((line) {
+//         if (line.startsWith('data: ')) {
+//           final dataString = line.substring(6).trim();
+//           if (dataString == '[DONE]') {
+//             setState(() {
+//               _isLoading = false;
+//               _isGeneratingFullAudio = false;
+//             });
+//             return;
+//           }
+
+//           try {
+//             final decoded = jsonDecode(dataString);
+//             if (decoded.containsKey("audio_url")) {
+//               setState(() {
+//                 _audioUrl = decoded["audio_url"];
+//               });
+//             } else {
+//               setState(() {
+//                 _slideResults.add({
+//                   "original_text": decoded["original_text"] ?? "",
+//                   "narrated_text": decoded["narrated_text"] ?? "",
+//                   "translated_text": decoded["translated_text"] ?? "",
+//                 });
+//                 _audioPlayers.add(AudioPlayer());
+//                 _isPlaying.add(false);
+//                 _isSlideLoading.add(false);
+//                 _hasSlideError.add(false);
+//               });
+//             }
+//           } catch (e) {
+//             print("Error decoding data: $e");
+//           }
+//         }
+//       }, onError: (error) {
+//         print("Stream error: $error");
+//         setState(() {
+//           _isLoading = false;
+//           _isGeneratingFullAudio = false;
+//         });
+//       }, onDone: () {
+//         print("Stream finished");
+//       });
+//     } catch (e) {
+//       print("Error starting stream: $e");
+//       setState(() {
+//         _isLoading = false;
+//         _isGeneratingFullAudio = false;
+//       });
+//     }
+//   }
+
+//   void _togglePlayback(int index) async {
+//     if (_isPlaying[index]) {
+//       await _audioPlayers[index].pause();
+//     } else {
+//       await _audioPlayers[index].play(UrlSource(_audioUrl!));
+//     }
+
+//     setState(() {
+//       _isPlaying[index] = !_isPlaying[index];
+//     });
+
+//     _audioPlayers[index].onPlayerComplete.listen((event) {
+//       setState(() {
+//         _isPlaying[index] = false;
+//       });
+//     });
+//   }
+
+//   Future<void> _downloadAudioFile() async {
+//     var status = await Permission.storage.request();
+//     if (!status.isGranted) {
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         const SnackBar(content: Text("Storage permission is required to download")),
+//       );
+//       return;
+//     }
+
+//     final dir = await getExternalStorageDirectory();
+//     final taskId = await FlutterDownloader.enqueue(
+//       url: _audioUrl!,
+//       savedDir: dir!.path,
+//       fileName: '${widget.fileName}_audio.mp3',
+//       showNotification: true,
+//       openFileFromNotification: true,
+//     );
+
+//     if (taskId != null && mounted) {
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         const SnackBar(content: Text("Download started...")),
+//       );
+//     }
+//   }
+
+//   Widget _buildSlideCard(int index) {
+//     final slide = _slideResults[index];
+//     return Column(
+//       children: [
+//         Card(
+//           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+//           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+//           elevation: 4,
+//           child: Padding(
+//             padding: const EdgeInsets.all(16),
+//             child: Column(
+//               crossAxisAlignment: CrossAxisAlignment.start,
+//               children: [
+//                 Text('Slide ${index + 1}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blueAccent)),
+//                 const SizedBox(height: 8),
+//                 const Text('Original:', style: TextStyle(fontWeight: FontWeight.bold)),
+//                 Text(slide["original_text"] ?? ''),
+//                 const SizedBox(height: 8),
+//                 const Text('Narrated:', style: TextStyle(fontWeight: FontWeight.bold)),
+//                 Text(slide["narrated_text"] ?? ''),
+//                 const SizedBox(height: 8),
+//                 const Text('Translated:', style: TextStyle(fontWeight: FontWeight.bold)),
+//                 Text(slide["translated_text"] ?? ''),
+//               ],
+//             ),
+//           ),
+//         ),
+//         Row(
+//           mainAxisAlignment: MainAxisAlignment.center,
+//           children: [
+//             IconButton(
+//               icon: const Icon(Icons.arrow_back_ios),
+//               onPressed: _currentIndex > 0
+//                   ? () => setState(() => _currentIndex--)
+//                   : null,
+//             ),
+//             IconButton(
+//               icon: const Icon(Icons.arrow_forward_ios),
+//               onPressed: _currentIndex < _slideResults.length - 1
+//                   ? () => setState(() => _currentIndex++)
+//                   : null,
+//             ),
+//           ],
+//         ),
+//       ],
+//     );
+//   }
+
+//   Widget _buildControlButtons() {
+//     return Padding(
+//       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+//       child: Column(
+//         children: [
+//           if (_isGeneratingFullAudio)
+//             const LinearProgressIndicator(minHeight: 6),
+//           const SizedBox(height: 10),
+//           Row(
+//             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+//             children: [
+//               ElevatedButton.icon(
+//                 onPressed: _audioUrl != null
+//                     ? () => _togglePlayback(_currentIndex)
+//                     : null,
+//                 icon: Icon(_isPlaying[_currentIndex]
+//                     ? Icons.pause_circle
+//                     : Icons.play_circle),
+//                 label: const Text("Play Slide"),
+//                 style: ElevatedButton.styleFrom(
+//                   backgroundColor: Colors.purple,
+//                   foregroundColor: Colors.white,
+//                 ),
+//               ),
+//               ElevatedButton.icon(
+//                 onPressed: _audioUrl != null
+//                     ? () => AudioPlayer().play(UrlSource(_audioUrl!))
+//                     : null,
+//                 icon: const Icon(Icons.queue_music),
+//                 label: const Text("Play Full"),
+//                 style: ElevatedButton.styleFrom(
+//                   backgroundColor: Colors.blue,
+//                   foregroundColor: Colors.white,
+//                 ),
+//               ),
+//               IconButton(
+//                 onPressed: _audioUrl != null ? _downloadAudioFile : null,
+//                 icon: const Icon(Icons.download),
+//                 color: Colors.green,
+//                 tooltip: "Download Full Audio",
+//               ),
+//             ],
+//           ),
+//         ],
+//       ),
+//     );
 //   }
 
 //   @override
@@ -102,122 +272,48 @@
 //     return Scaffold(
 //       backgroundColor: Colors.white,
 //       appBar: AppBar(
-//         backgroundColor: Color(0xFFDDF1FF),
+//         backgroundColor: const Color(0xFFDDF1FF),
 //         elevation: 0,
 //         leading: IconButton(
-//           icon: Icon(Icons.arrow_back, color: Colors.purple),
+//           icon: const Icon(Icons.arrow_back, color: Colors.purple),
 //           onPressed: () => Navigator.pop(context),
 //         ),
 //         title: Image.asset('assets/images/audify_logo.png', height: 40),
 //         centerTitle: true,
 //         actions: [
-//           IconButton(
-//             icon: Icon(Icons.notifications, color: Colors.purple),
-//             onPressed: () {},
-//           ),
+//           if (_audioUrl != null)
+//             IconButton(
+//               icon: const Icon(Icons.download, color: Colors.green),
+//               onPressed: _downloadAudioFile,
+//             ),
 //         ],
 //       ),
-//       body: Column(
-//         mainAxisAlignment: MainAxisAlignment.center,
-//         children: [
-//           SizedBox(height: 20),
-//           Image.asset('assets/images/audio_convert.png', height: 120),
-//           SizedBox(height: 20),
-//           Text(
-//             "Conversion to audio\ncompleted successfully!",
-//             textAlign: TextAlign.center,
-//             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-//           ),
-//           SizedBox(height: 20),
-//           Padding(
-//             padding: const EdgeInsets.symmetric(horizontal: 30.0),
-//             child: Column(
+//       body: _isLoading && _slideResults.isEmpty
+//           ? const Center(child: CircularProgressIndicator())
+//           : Column(
 //               children: [
-//                 Slider(
-//                   value: position.inSeconds.toDouble(),
-//                   min: 0,
-//                   max: duration.inSeconds.toDouble(),
-//                   onChanged: (value) async {
-//                     final newPosition = Duration(seconds: value.toInt());
-//                     await _audioPlayer.seek(newPosition);
-//                     await _audioPlayer.resume();
-//                     setState(() {
-//                       position = newPosition;
-//                     });
-//                   },
+//                 Expanded(
+//                   child: _slideResults.isEmpty
+//                       ? const Center(child: Text("No slides available."))
+//                       : SingleChildScrollView(
+//                           child: _buildSlideCard(_currentIndex),
+//                         ),
 //                 ),
-//                 Row(
-//                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                   children: [
-//                     Text(
-//                       "${position.inMinutes}:${(position.inSeconds % 60).toString().padLeft(2, '0')}",
-//                       style: TextStyle(fontSize: 14),
-//                     ),
-//                     Text(
-//                       "${duration.inMinutes}:${(duration.inSeconds % 60).toString().padLeft(2, '0')}",
-//                       style: TextStyle(fontSize: 14),
-//                     ),
-//                   ],
-//                 ),
+//                 _buildControlButtons(),
 //               ],
 //             ),
-//           ),
-//           SizedBox(height: 20),
-//           IconButton(
-//             icon: Icon(
-//               isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
-//               size: 50,
-//               color: Colors.purple,
-//             ),
-//             onPressed: _togglePlayback,
-//           ),
-//           SizedBox(height: 20),
-//           GestureDetector(
-//             onTap: _downloadAudioFile,
-//             child: Container(
-//               padding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-//               decoration: BoxDecoration(
-//                 color: Color(0xFF4285F4),
-//                 borderRadius: BorderRadius.circular(10),
-//               ),
-//               child: Row(
-//                 mainAxisSize: MainAxisSize.min,
-//                 children: [
-//                   Text(
-//                     "Download to your\nDevice",
-//                     style: TextStyle(
-//                       color: Colors.white,
-//                       fontSize: 16,
-//                       fontWeight: FontWeight.bold,
-//                     ),
-//                     textAlign: TextAlign.center,
-//                   ),
-//                   SizedBox(width: 10),
-//                   Image.asset('assets/images/device.png', height: 40),
-//                 ],
-//               ),
-//             ),
-//           ),
-//         ],
-//       ),
 //     );
 //   }
 // }
 
-// void main() {
-//   runApp(MaterialApp(home: AudioConversionSuccessScreen()));
-// }
-
-// ignore_for_file: use_build_context_synchronously
-
-//new, 12.5.2025
+//new: 16/5/25
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class AudioScreen extends StatefulWidget {
@@ -241,13 +337,14 @@ class AudioScreen extends StatefulWidget {
 class _AudioScreenState extends State<AudioScreen> {
   List<Map<String, String>> _slideResults = [];
   String? _audioUrl;
-  final List<AudioPlayer> _audioPlayers = [];
-  final List<bool> _isPlaying = [];
-  final List<bool> _isSlideLoading = [];
-  final List<bool> _hasSlideError = [];
-
+  String? _localAudioPath;
   bool _isLoading = true;
+  bool _isGeneratingFullAudio = true;
+  int _currentIndex = 0;
   StreamSubscription<String>? _subscription;
+
+  final AudioPlayer _fullAudioPlayer = AudioPlayer();
+  bool _isFullAudioPlaying = false;
 
   @override
   void initState() {
@@ -258,106 +355,106 @@ class _AudioScreenState extends State<AudioScreen> {
   @override
   void dispose() {
     _subscription?.cancel();
-    for (var player in _audioPlayers) {
-      player.dispose();
-    }
+    _fullAudioPlayer.dispose();
     super.dispose();
   }
 
-void _startProcessing() async {
-  final uri = Uri.parse("http://10.0.2.2:5000/narrate_stream");
+  void _startProcessing() async {
+    final uri = Uri.parse("http://10.0.2.2:5000/narrate_stream");
 
-  final client = http.Client();
-  final request = http.Request("POST", uri)
-    ..headers['Content-Type'] = 'application/json'
-    ..body = jsonEncode({
-      "slide_texts": widget.slideTexts,
-      "style": widget.style,
-      "language": widget.language,
-      "file_name": widget.fileName,
-    });
+    final client = http.Client();
+    final request =
+        http.Request("POST", uri)
+          ..headers['Content-Type'] = 'application/json'
+          ..body = jsonEncode({
+            "slide_texts": widget.slideTexts,
+            "style": widget.style,
+            "language": widget.language,
+            "file_name": widget.fileName,
+          });
 
-  try {
-    final response = await client.send(request);
+    try {
+      final response = await client.send(request);
 
-    // Check if the response is a successful one
-    if (response.statusCode != 200) {
-      throw Exception("Failed to load stream, status code: ${response.statusCode}");
-    }
+      if (response.statusCode != 200) {
+        throw Exception("Failed to load stream");
+      }
 
-    _subscription = response.stream
-        .transform(utf8.decoder)
-        .transform(const LineSplitter())
-        .listen(
-      (line) {
-        print("Received line: $line");  // Debugging line
-        if (line.startsWith('data: ')) {
-          final dataString = line.substring(6).trim();
-          if (dataString == '[DONE]') {
-            setState(() {
-              _isLoading = false;
-            });
-            return;
-          }
+      _subscription = response.stream
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen(
+            (line) {
+              if (line.startsWith('data: ')) {
+                final dataString = line.substring(6).trim();
+                if (dataString == '[DONE]') {
+                  setState(() {
+                    _isLoading = false;
+                    _isGeneratingFullAudio = false;
+                  });
+                  return;
+                }
 
-          try {
-            final decoded = jsonDecode(dataString);
-            if (decoded.containsKey("audio_url")) {
+                try {
+                  final decoded = jsonDecode(dataString);
+                  if (decoded.containsKey("audio_url")) {
+                    setState(() {
+                      _audioUrl = decoded["audio_url"];
+                    });
+                  } else {
+                    setState(() {
+                      _slideResults.add({
+                        "original_text": decoded["original_text"] ?? "",
+                        "narrated_text": decoded["narrated_text"] ?? "",
+                        "translated_text": decoded["translated_text"] ?? "",
+                      });
+                    });
+                  }
+                } catch (e) {
+                  print("Error decoding line: $e");
+                }
+              }
+            },
+            onError: (e) {
+              print("Stream error: $e");
               setState(() {
-                _audioUrl = decoded["audio_url"];
+                _isLoading = false;
+                _isGeneratingFullAudio = false;
               });
-            } else {
-              setState(() {
-                _slideResults.add({
-                  "original_text": decoded["original_text"] ?? "",
-                  "narrated_text": decoded["narrated_text"] ?? "",
-                  "translated_text": decoded["translated_text"] ?? "",
-                });
-                _audioPlayers.add(AudioPlayer());
-                _isPlaying.add(false);
-                _isSlideLoading.add(false);
-                _hasSlideError.add(false);
-              });
-            }
-          } catch (e) {
-            print("Error decoding data: $e");
-          }
-        }
-      },
-      onError: (error) {
-        print("Stream error: $error");
-        setState(() {
-          _isLoading = false;
-        });
-      },
-      onDone: () {
-        print("Stream finished");
-      },
-    );
-  } catch (e) {
-    print("Error starting stream: $e");
-    setState(() {
-      _isLoading = false;
-    });
-  }
-}
-
-
-
-  void _togglePlayback(int index) async {
-    if (_isPlaying[index]) {
-      await _audioPlayers[index].pause();
-    } else {
-      await _audioPlayers[index].play(UrlSource(_audioUrl!));
-    }
-
-    setState(() {
-      _isPlaying[index] = !_isPlaying[index];
-    });
-
-    _audioPlayers[index].onPlayerComplete.listen((event) {
+            },
+          );
+    } catch (e) {
+      print("Error starting stream: $e");
       setState(() {
-        _isPlaying[index] = false;
+        _isLoading = false;
+        _isGeneratingFullAudio = false;
+      });
+    }
+  }
+
+  void _toggleFullAudio() async {
+    if (_isFullAudioPlaying) {
+      await _fullAudioPlayer.pause();
+    } else {
+      if (_localAudioPath != null && File(_localAudioPath!).existsSync()) {
+        await _fullAudioPlayer.play(DeviceFileSource(_localAudioPath!));
+      } else if (_audioUrl != null) {
+        await _fullAudioPlayer.play(UrlSource(_audioUrl!));
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Audio not ready")));
+        return;
+      }
+    }
+
+    setState(() {
+      _isFullAudioPlaying = !_isFullAudioPlaying;
+    });
+
+    _fullAudioPlayer.onPlayerComplete.listen((event) {
+      setState(() {
+        _isFullAudioPlaying = false;
       });
     });
   }
@@ -366,67 +463,144 @@ void _startProcessing() async {
     var status = await Permission.storage.request();
     if (!status.isGranted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Storage permission is required to download")),
+        const SnackBar(content: Text("Storage permission required")),
       );
       return;
     }
 
-    final dir = await getExternalStorageDirectory();
+    final fileName = '${widget.fileName}_audio.mp3';
+    final dirPath = '/storage/emulated/0/Download';
+
     final taskId = await FlutterDownloader.enqueue(
       url: _audioUrl!,
-      savedDir: dir!.path,
-      fileName: '${widget.fileName}_audio.mp3',
+      savedDir: dirPath,
+      fileName: fileName,
       showNotification: true,
       openFileFromNotification: true,
     );
 
-    if (taskId != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Download started...")),
-      );
+    setState(() {
+      _localAudioPath = '$dirPath/$fileName';
+    });
+
+    if (taskId != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Download started: $fileName")));
     }
   }
 
-  Widget _buildSlideCardContent(int index) {
+  Widget _buildTopControls() {
+    String statusText = "";
+    if (_isGeneratingFullAudio) {
+      statusText =
+          "Audio is generating (Slide ${_slideResults.length} / ${widget.slideTexts.length})";
+    } else if (_audioUrl != null) {
+      statusText = "Full audio is generated successfully";
+    }
+
+    return Column(
+      children: [
+        if (statusText.isNotEmpty)
+          Text(
+            statusText,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.blueGrey,
+            ),
+          ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ElevatedButton.icon(
+              onPressed:
+                  _audioUrl != null || _localAudioPath != null
+                      ? _toggleFullAudio
+                      : null,
+              icon: Icon(
+                _isFullAudioPlaying ? Icons.pause : Icons.play_arrow,
+              ),
+              label: const Text("Play Full"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.download),
+              onPressed: _audioUrl != null ? _downloadAudioFile : null,
+              color: Colors.green,
+              tooltip: "Download Full Audio",
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSlideCard(int index) {
     final slide = _slideResults[index];
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Slide ${index + 1}',
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.blueAccent,
-          ),
-        ),
-        const SizedBox(height: 10),
-        const Text('Original:', style: TextStyle(fontWeight: FontWeight.bold)),
-        Text(slide["original_text"] ?? ''),
-        const SizedBox(height: 10),
-        const Text('Narrated:', style: TextStyle(fontWeight: FontWeight.bold)),
-        Text(slide["narrated_text"] ?? ''),
-        const SizedBox(height: 10),
-        const Text('Translated:', style: TextStyle(fontWeight: FontWeight.bold)),
-        Text(slide["translated_text"] ?? ''),
-        const SizedBox(height: 15),
-        if (_audioUrl != null)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              ElevatedButton.icon(
-                onPressed: () => _togglePlayback(index),
-                icon: Icon(_isPlaying[index]
-                    ? Icons.pause_circle_filled
-                    : Icons.play_circle_fill),
-                label: Text(_isPlaying[index] ? 'Pause' : 'Play Audio'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple,
-                  foregroundColor: Colors.white,
+        Container(
+          height: MediaQuery.of(context).size.height * 0.55,
+          child: Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 4,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Slide ${index + 1}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blueAccent,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text('Original:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(slide["original_text"] ?? ''),
+                    const SizedBox(height: 8),
+                    const Text('Narrated:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(slide["narrated_text"] ?? ''),
+                    const SizedBox(height: 8),
+                    const Text('Translated:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(slide["translated_text"] ?? ''),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back_ios),
+              onPressed: _currentIndex > 0
+                  ? () => setState(() => _currentIndex--)
+                  : null,
+            ),
+            IconButton(
+              icon: const Icon(Icons.arrow_forward_ios),
+              onPressed: _currentIndex < _slideResults.length - 1
+                  ? () => setState(() => _currentIndex++)
+                  : null,
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        _buildTopControls(),
+        const SizedBox(height: 8),
       ],
     );
   }
@@ -444,42 +618,20 @@ void _startProcessing() async {
         ),
         title: Image.asset('assets/images/audify_logo.png', height: 40),
         centerTitle: true,
-        actions: [
-          if (_audioUrl != null)
-            IconButton(
-              icon: const Icon(Icons.download, color: Colors.green),
-              onPressed: _downloadAudioFile,
-            ),
-        ],
       ),
       body: _isLoading && _slideResults.isEmpty
           ? const Center(child: CircularProgressIndicator())
-          : PageView.builder(
-              itemCount: _slideResults.length,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 500),
-                    child: Card(
-                      key: ValueKey("slide_$index"),
-                      margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-                      elevation: 4,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: SingleChildScrollView(
-                          child: _isSlideLoading.length <= index || !_isSlideLoading[index]
-                              ? _buildSlideCardContent(index)
-                              : const Center(child: CircularProgressIndicator()),
+          : Column(
+              children: [
+                Expanded(
+                  child: _slideResults.isEmpty
+                      ? const Center(child: Text("No slides available."))
+                      : SingleChildScrollView(
+                          child: _buildSlideCard(_currentIndex),
                         ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-
+                ),
+              ],
             ),
-
     );
   }
 }

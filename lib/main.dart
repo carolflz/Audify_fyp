@@ -121,15 +121,18 @@
 //   }
 // }
 import 'package:flutter/material.dart';
+import 'package:flutter_downloader/flutter_downloader.dart'; // Required for downloading
 import 'upload_slide.dart';
 import 'user_customization.dart';
 
-void main() {
-  runApp(const MyApp()); // Still keeping as const
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized(); // Needed before async calls
+  await FlutterDownloader.initialize(debug: true); // Initialize downloader
+  runApp(const MyApp()); // Run app
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key}); // Constructor
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -137,16 +140,15 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Audify',
       theme: ThemeData(primarySwatch: Colors.blue),
-      // ✅ Setup initial route and named routes
       initialRoute: '/',
       routes: {
-        '/': (context) => const UploadSlideScreen(), // Default home screen
-        '/userCustomization':
-            (context) => const UserCustomizationScreen(
+        '/': (context) => const UploadSlideScreen(),
+        '/userCustomization': (context) => const UserCustomizationScreen(
               extractedText: '',
               fileName: '',
-            ), // Customization screen
+            ),
       },
     );
   }
 }
+

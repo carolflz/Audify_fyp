@@ -36,10 +36,10 @@ class _UploadSlideScreenState extends State<UploadSlideScreen> {
       final fileSizeInBytes = await file.length();
       final fileSizeInMB = fileSizeInBytes / (1024 * 1024);
 
-      if (fileSizeInMB > 5) {
+      if (fileSizeInMB > 15) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Please upload a file not more than 5MB'),
+            content: Text('Please upload a file not more than 15MB'),
           ),
         );
       } else {
@@ -251,7 +251,7 @@ class _UploadSlideScreenState extends State<UploadSlideScreen> {
                       const SizedBox(height: 10),
                       fileName == null
                           ? const Text(
-                            'Max file size 5MB\nTap to select a file',
+                            'Max file size 15MB\nTap to select a file',
                           )
                           : Text(
                             fileName!,
