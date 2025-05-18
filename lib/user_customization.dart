@@ -149,7 +149,7 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
             const SizedBox(height: 10),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal[700],
+                backgroundColor: const Color.fromARGB(255, 34, 229, 255),
               ),
               icon: const Icon(Icons.download),
               label: const Text('Download Extracted Text'),
@@ -158,7 +158,7 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
             const SizedBox(height: 24),
             Row(
               children: const [
-                Icon(Icons.mic, color: Colors.blue),
+                Icon(Icons.mic, color: Colors.white),
                 SizedBox(width: 8),
                 Text(
                   'Audio Customization:',
