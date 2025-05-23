@@ -318,6 +318,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/services.dart';
 
 // Import your upload screen
 import 'upload_slide.dart';
@@ -353,6 +354,7 @@ class _AudioScreenState extends State<AudioScreen> {
   bool _isFullAudioPlaying = false;
 
   AndroidDeviceInfo? androidInfo;
+  bool _notifiedAudioReady = false; // <-- track if we've shown the SnackBar
 
   @override
   void initState() {
@@ -417,6 +419,16 @@ class _AudioScreenState extends State<AudioScreen> {
                 setState(() {
                   _audioUrl = decoded["audio_url"];
                 });
+                // Show SnackBar once when full audio is ready
+                if (!_notifiedAudioReady) {
+                  _notifiedAudioReady = true;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Full audio has been generated successfully!"),
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                }
               } else {
                 setState(() {
                   _slideResults.add({
@@ -573,6 +585,30 @@ class _AudioScreenState extends State<AudioScreen> {
 
   Widget _buildSlideCard(int index) {
     final slide = _slideResults[index];
+    final original = slide["original_text"] ?? '';
+    final narrated = slide["narrated_text"] ?? '';
+    final translated = slide["translated_text"] ?? '';
+
+    // Helper widget to build section title with copy icon
+    Widget sectionTitle(String title, String textToCopy) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          IconButton(
+            icon: const Icon(Icons.copy, size: 20, color: Colors.grey),
+            tooltip: 'Copy $title',
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: textToCopy));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('$title copied to clipboard')),
+              );
+            },
+          ),
+        ],
+      );
+    }
+
     return Column(
       children: [
         Container(
@@ -598,14 +634,20 @@ class _AudioScreenState extends State<AudioScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text('Original:', style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text(slide["original_text"] ?? ''),
+
+                    // Original with copy icon
+                    sectionTitle('Original:', original),
+                    Text(original),
                     const SizedBox(height: 8),
-                    const Text('Narrated:', style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text(slide["narrated_text"] ?? ''),
+
+                    // Narrated with copy icon
+                    sectionTitle('Narrated:', narrated),
+                    Text(narrated),
                     const SizedBox(height: 8),
-                    const Text('Translated:', style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text(slide["translated_text"] ?? ''),
+
+                    // Translated with copy icon
+                    sectionTitle('Translated:', translated),
+                    Text(translated),
                   ],
                 ),
               ),
@@ -631,6 +673,7 @@ class _AudioScreenState extends State<AudioScreen> {
       ],
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
