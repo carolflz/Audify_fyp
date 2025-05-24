@@ -382,14 +382,15 @@ class _AudioScreenState extends State<AudioScreen> {
     final uri = Uri.parse("http://10.0.2.2:5000/narrate_stream");
 
     final client = http.Client();
-    final request = http.Request("POST", uri)
-      ..headers['Content-Type'] = 'application/json'
-      ..body = jsonEncode({
-        "slide_texts": widget.slideTexts,
-        "style": widget.style,
-        "language": widget.language,
-        "file_name": widget.fileName,
-      });
+    final request =
+        http.Request("POST", uri)
+          ..headers['Content-Type'] = 'application/json'
+          ..body = jsonEncode({
+            "slide_texts": widget.slideTexts,
+            "style": widget.style,
+            "language": widget.language,
+            "file_name": widget.fileName,
+          });
 
     try {
       final response = await client.send(request);
@@ -402,55 +403,57 @@ class _AudioScreenState extends State<AudioScreen> {
           .transform(utf8.decoder)
           .transform(const LineSplitter())
           .listen(
-        (line) {
-          if (line.startsWith('data: ')) {
-            final dataString = line.substring(6).trim();
-            if (dataString == '[DONE]') {
+            (line) {
+              if (line.startsWith('data: ')) {
+                final dataString = line.substring(6).trim();
+                if (dataString == '[DONE]') {
+                  setState(() {
+                    _isLoading = false;
+                    _isGeneratingFullAudio = false;
+                  });
+                  return;
+                }
+
+                try {
+                  final decoded = jsonDecode(dataString);
+                  if (decoded.containsKey("audio_url")) {
+                    setState(() {
+                      _audioUrl = decoded["audio_url"];
+                    });
+                    // Show SnackBar once when full audio is ready
+                    if (!_notifiedAudioReady) {
+                      _notifiedAudioReady = true;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            "Full audio has been generated successfully!",
+                          ),
+                          duration: Duration(seconds: 3),
+                        ),
+                      );
+                    }
+                  } else {
+                    setState(() {
+                      _slideResults.add({
+                        "original_text": decoded["original_text"] ?? "",
+                        "narrated_text": decoded["narrated_text"] ?? "",
+                        "translated_text": decoded["translated_text"] ?? "",
+                      });
+                    });
+                  }
+                } catch (e) {
+                  print("Error decoding line: $e");
+                }
+              }
+            },
+            onError: (e) {
+              print("Stream error: $e");
               setState(() {
                 _isLoading = false;
                 _isGeneratingFullAudio = false;
               });
-              return;
-            }
-
-            try {
-              final decoded = jsonDecode(dataString);
-              if (decoded.containsKey("audio_url")) {
-                setState(() {
-                  _audioUrl = decoded["audio_url"];
-                });
-                // Show SnackBar once when full audio is ready
-                if (!_notifiedAudioReady) {
-                  _notifiedAudioReady = true;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Full audio has been generated successfully!"),
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
-                }
-              } else {
-                setState(() {
-                  _slideResults.add({
-                    "original_text": decoded["original_text"] ?? "",
-                    "narrated_text": decoded["narrated_text"] ?? "",
-                    "translated_text": decoded["translated_text"] ?? "",
-                  });
-                });
-              }
-            } catch (e) {
-              print("Error decoding line: $e");
-            }
-          }
-        },
-        onError: (e) {
-          print("Stream error: $e");
-          setState(() {
-            _isLoading = false;
-            _isGeneratingFullAudio = false;
-          });
-        },
-      );
+            },
+          );
     } catch (e) {
       print("Error starting stream: $e");
       setState(() {
@@ -499,10 +502,13 @@ class _AudioScreenState extends State<AudioScreen> {
       }
 
       if ((androidInfo?.version.sdkInt ?? 0) >= 30) {
-        var manageStorageStatus = await Permission.manageExternalStorage.request();
+        var manageStorageStatus =
+            await Permission.manageExternalStorage.request();
         if (!manageStorageStatus.isGranted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Manage External Storage permission required")),
+            const SnackBar(
+              content: Text("Manage External Storage permission required"),
+            ),
           );
           return;
         }
@@ -527,22 +533,23 @@ class _AudioScreenState extends State<AudioScreen> {
       });
 
       if (taskId != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Download started: $fileName")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Download started: $fileName")));
       }
     } catch (e) {
       print("Download error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Download failed")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Download failed")));
     }
   }
 
   Widget _buildTopControls() {
     String statusText = "";
     if (_isGeneratingFullAudio) {
-      statusText = "Audio is generating (Slide ${_slideResults.length} / ${widget.slideTexts.length})";
+      statusText =
+          "Audio is generating (Slide ${_slideResults.length} / ${widget.slideTexts.length})";
     } else if (_audioUrl != null) {
       statusText = "Full audio is generated successfully";
     }
@@ -563,7 +570,10 @@ class _AudioScreenState extends State<AudioScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             ElevatedButton.icon(
-              onPressed: _audioUrl != null || _localAudioPath != null ? _toggleFullAudio : null,
+              onPressed:
+                  _audioUrl != null || _localAudioPath != null
+                      ? _toggleFullAudio
+                      : null,
               icon: Icon(_isFullAudioPlaying ? Icons.pause : Icons.play_arrow),
               label: const Text("Play Full"),
               style: ElevatedButton.styleFrom(
@@ -612,7 +622,7 @@ class _AudioScreenState extends State<AudioScreen> {
     return Column(
       children: [
         Container(
-          height: MediaQuery.of(context).size.height * 0.55,
+          height: MediaQuery.of(context).size.height * 0.69,
           child: Card(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             shape: RoundedRectangleBorder(
@@ -659,11 +669,17 @@ class _AudioScreenState extends State<AudioScreen> {
           children: [
             IconButton(
               icon: const Icon(Icons.arrow_back_ios),
-              onPressed: _currentIndex > 0 ? () => setState(() => _currentIndex--) : null,
+              onPressed:
+                  _currentIndex > 0
+                      ? () => setState(() => _currentIndex--)
+                      : null,
             ),
             IconButton(
               icon: const Icon(Icons.arrow_forward_ios),
-              onPressed: _currentIndex < _slideResults.length - 1 ? () => setState(() => _currentIndex++) : null,
+              onPressed:
+                  _currentIndex < _slideResults.length - 1
+                      ? () => setState(() => _currentIndex++)
+                      : null,
             ),
           ],
         ),
@@ -673,7 +689,6 @@ class _AudioScreenState extends State<AudioScreen> {
       ],
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -688,7 +703,9 @@ class _AudioScreenState extends State<AudioScreen> {
           onPressed: () {
             Navigator.pushAndRemoveUntil(
               context,
-              MaterialPageRoute(builder: (context) => const UploadSlideScreen()),
+              MaterialPageRoute(
+                builder: (context) => const UploadSlideScreen(),
+              ),
               (Route<dynamic> route) => false,
             );
           },
@@ -696,19 +713,21 @@ class _AudioScreenState extends State<AudioScreen> {
         title: Image.asset('assets/images/audify_logo.png', height: 40),
         centerTitle: true,
       ),
-      body: _isLoading && _slideResults.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Expanded(
-                  child: _slideResults.isEmpty
-                      ? const Center(child: Text("No slides available."))
-                      : SingleChildScrollView(
-                          child: _buildSlideCard(_currentIndex),
-                        ),
-                ),
-              ],
-            ),
+      body:
+          _isLoading && _slideResults.isEmpty
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+                children: [
+                  Expanded(
+                    child:
+                        _slideResults.isEmpty
+                            ? const Center(child: Text("No slides available."))
+                            : SingleChildScrollView(
+                              child: _buildSlideCard(_currentIndex),
+                            ),
+                  ),
+                ],
+              ),
     );
   }
 }
