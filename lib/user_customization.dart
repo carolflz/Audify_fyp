@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -80,8 +82,11 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
 
 @override
 Widget build(BuildContext context) {
-  return WillPopScope(
-    onWillPop: () async {
+  return PopScope(
+    canPop: false, // Block back by default
+    onPopInvokedWithResult: (didPop, result) async {
+      if (didPop) return;
+
       final shouldPop = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
@@ -89,20 +94,22 @@ Widget build(BuildContext context) {
           content: const Text('Do you want to go back? Unsaved progress may be lost.'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false), // Stay on page
+              onPressed: () => Navigator.of(context).pop(false),
               child: const Text('No'),
             ),
             TextButton(
-              onPressed: () => Navigator.of(context).pop(true), // Leave page
+              onPressed: () => Navigator.of(context).pop(true),
               child: const Text('Yes'),
             ),
           ],
         ),
       );
-      return shouldPop ?? false; // If dialog dismissed without choosing, stay
+
+      if (shouldPop ?? false) {
+        Navigator.of(context).pop(); // Proceed with manual pop
+      }
     },
     child: Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.lightBlue[100],
         elevation: 0,
