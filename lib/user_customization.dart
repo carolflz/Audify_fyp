@@ -61,7 +61,7 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
     }
   }
 
-  // ✅ Updated: Only navigate and pass data — no backend call here
+  // Only navigate and pass data — no backend call here
   void sendToBackendAndNavigate() {
     if (selectedNarrationStyle == null || selectedLanguage == null) return;
 
@@ -78,19 +78,59 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
+@override
+Widget build(BuildContext context) {
+  return WillPopScope(
+    onWillPop: () async {
+      final shouldPop = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Confirm Exit'),
+          content: const Text('Do you want to go back? Unsaved progress may be lost.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false), // Stay on page
+              child: const Text('No'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true), // Leave page
+              child: const Text('Yes'),
+            ),
+          ],
+        ),
+      );
+      return shouldPop ?? false; // If dialog dismissed without choosing, stay
+    },
+    child: Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.lightBlue[100],
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications, color: Colors.black87),
-            onPressed: () {},
-          ),
-        ],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () async {
+            final shouldPop = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Confirm Exit'),
+                content: const Text('Do you want to go back? Unsaved progress may be lost.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('No'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text('Yes'),
+                  ),
+                ],
+              ),
+            );
+            if (shouldPop ?? false) {
+              Navigator.of(context).pop();
+            }
+          },
+        ),
         title: Center(
           child: Image.asset(
             'assets/images/audify_logo.png',
@@ -157,15 +197,22 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
             ),
             const SizedBox(height: 24),
             Row(
-              children: const [
-                Icon(Icons.mic, color: Colors.white),
-                SizedBox(width: 8),
-                Text(
+              children: [
+                Image.asset(
+                  'assets/images/audio_icon.png',
+                  width: 24,
+                  height: 24,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.error, color: Colors.red),
+                ),
+                const SizedBox(width: 8),
+                const Text(
                   'Audio Customization:',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
+
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               decoration: InputDecoration(
@@ -277,6 +324,7 @@ class _UserCustomizationScreenState extends State<UserCustomizationScreen> {
           ],
         ),
       ),
-    );
+    ));
+    
   }
 }
