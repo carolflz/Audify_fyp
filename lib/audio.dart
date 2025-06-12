@@ -1,314 +1,5 @@
-//new, 12.5.2025
-// import 'dart:async';
-// import 'dart:convert';
-// import 'package:flutter/material.dart';
-// import 'package:http/http.dart' as http;
-// import 'package:audioplayers/audioplayers.dart';
-// import 'package:flutter_downloader/flutter_downloader.dart';
-// import 'package:path_provider/path_provider.dart';
-// import 'package:permission_handler/permission_handler.dart';
+// ignore_for_file: prefer_final_fields, use_build_context_synchronously, avoid_print, sized_box_for_whitespace
 
-// class AudioScreen extends StatefulWidget {
-//   final List<String> slideTexts;
-//   final String style;
-//   final String language;
-//   final String fileName;
-
-//   const AudioScreen({
-//     super.key,
-//     required this.slideTexts,
-//     required this.style,
-//     required this.language,
-//     required this.fileName,
-//   });
-
-//   @override
-//   State<AudioScreen> createState() => _AudioScreenState();
-// }
-
-// class _AudioScreenState extends State<AudioScreen> {
-//   List<Map<String, String>> _slideResults = [];
-//   String? _audioUrl;
-//   final List<AudioPlayer> _audioPlayers = [];
-//   final List<bool> _isPlaying = [];
-//   final List<bool> _isSlideLoading = [];
-//   final List<bool> _hasSlideError = [];
-//   bool _isLoading = true;
-//   int _currentIndex = 0;
-//   bool _isGeneratingFullAudio = true;
-//   StreamSubscription<String>? _subscription;
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     _startProcessing();
-//   }
-
-//   @override
-//   void dispose() {
-//     _subscription?.cancel();
-//     for (var player in _audioPlayers) {
-//       player.dispose();
-//     }
-//     super.dispose();
-//   }
-
-//   void _startProcessing() async {
-//     final uri = Uri.parse("http://10.0.2.2:5000/narrate_stream");
-
-//     final client = http.Client();
-//     final request = http.Request("POST", uri)
-//       ..headers['Content-Type'] = 'application/json'
-//       ..body = jsonEncode({
-//         "slide_texts": widget.slideTexts,
-//         "style": widget.style,
-//         "language": widget.language,
-//         "file_name": widget.fileName,
-//       });
-
-//     try {
-//       final response = await client.send(request);
-
-//       if (response.statusCode != 200) {
-//         throw Exception("Failed to load stream, status code: ${response.statusCode}");
-//       }
-
-//       _subscription = response.stream
-//           .transform(utf8.decoder)
-//           .transform(const LineSplitter())
-//           .listen((line) {
-//         if (line.startsWith('data: ')) {
-//           final dataString = line.substring(6).trim();
-//           if (dataString == '[DONE]') {
-//             setState(() {
-//               _isLoading = false;
-//               _isGeneratingFullAudio = false;
-//             });
-//             return;
-//           }
-
-//           try {
-//             final decoded = jsonDecode(dataString);
-//             if (decoded.containsKey("audio_url")) {
-//               setState(() {
-//                 _audioUrl = decoded["audio_url"];
-//               });
-//             } else {
-//               setState(() {
-//                 _slideResults.add({
-//                   "original_text": decoded["original_text"] ?? "",
-//                   "narrated_text": decoded["narrated_text"] ?? "",
-//                   "translated_text": decoded["translated_text"] ?? "",
-//                 });
-//                 _audioPlayers.add(AudioPlayer());
-//                 _isPlaying.add(false);
-//                 _isSlideLoading.add(false);
-//                 _hasSlideError.add(false);
-//               });
-//             }
-//           } catch (e) {
-//             print("Error decoding data: $e");
-//           }
-//         }
-//       }, onError: (error) {
-//         print("Stream error: $error");
-//         setState(() {
-//           _isLoading = false;
-//           _isGeneratingFullAudio = false;
-//         });
-//       }, onDone: () {
-//         print("Stream finished");
-//       });
-//     } catch (e) {
-//       print("Error starting stream: $e");
-//       setState(() {
-//         _isLoading = false;
-//         _isGeneratingFullAudio = false;
-//       });
-//     }
-//   }
-
-//   void _togglePlayback(int index) async {
-//     if (_isPlaying[index]) {
-//       await _audioPlayers[index].pause();
-//     } else {
-//       await _audioPlayers[index].play(UrlSource(_audioUrl!));
-//     }
-
-//     setState(() {
-//       _isPlaying[index] = !_isPlaying[index];
-//     });
-
-//     _audioPlayers[index].onPlayerComplete.listen((event) {
-//       setState(() {
-//         _isPlaying[index] = false;
-//       });
-//     });
-//   }
-
-//   Future<void> _downloadAudioFile() async {
-//     var status = await Permission.storage.request();
-//     if (!status.isGranted) {
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         const SnackBar(content: Text("Storage permission is required to download")),
-//       );
-//       return;
-//     }
-
-//     final dir = await getExternalStorageDirectory();
-//     final taskId = await FlutterDownloader.enqueue(
-//       url: _audioUrl!,
-//       savedDir: dir!.path,
-//       fileName: '${widget.fileName}_audio.mp3',
-//       showNotification: true,
-//       openFileFromNotification: true,
-//     );
-
-//     if (taskId != null && mounted) {
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         const SnackBar(content: Text("Download started...")),
-//       );
-//     }
-//   }
-
-//   Widget _buildSlideCard(int index) {
-//     final slide = _slideResults[index];
-//     return Column(
-//       children: [
-//         Card(
-//           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-//           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-//           elevation: 4,
-//           child: Padding(
-//             padding: const EdgeInsets.all(16),
-//             child: Column(
-//               crossAxisAlignment: CrossAxisAlignment.start,
-//               children: [
-//                 Text('Slide ${index + 1}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blueAccent)),
-//                 const SizedBox(height: 8),
-//                 const Text('Original:', style: TextStyle(fontWeight: FontWeight.bold)),
-//                 Text(slide["original_text"] ?? ''),
-//                 const SizedBox(height: 8),
-//                 const Text('Narrated:', style: TextStyle(fontWeight: FontWeight.bold)),
-//                 Text(slide["narrated_text"] ?? ''),
-//                 const SizedBox(height: 8),
-//                 const Text('Translated:', style: TextStyle(fontWeight: FontWeight.bold)),
-//                 Text(slide["translated_text"] ?? ''),
-//               ],
-//             ),
-//           ),
-//         ),
-//         Row(
-//           mainAxisAlignment: MainAxisAlignment.center,
-//           children: [
-//             IconButton(
-//               icon: const Icon(Icons.arrow_back_ios),
-//               onPressed: _currentIndex > 0
-//                   ? () => setState(() => _currentIndex--)
-//                   : null,
-//             ),
-//             IconButton(
-//               icon: const Icon(Icons.arrow_forward_ios),
-//               onPressed: _currentIndex < _slideResults.length - 1
-//                   ? () => setState(() => _currentIndex++)
-//                   : null,
-//             ),
-//           ],
-//         ),
-//       ],
-//     );
-//   }
-
-//   Widget _buildControlButtons() {
-//     return Padding(
-//       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-//       child: Column(
-//         children: [
-//           if (_isGeneratingFullAudio)
-//             const LinearProgressIndicator(minHeight: 6),
-//           const SizedBox(height: 10),
-//           Row(
-//             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-//             children: [
-//               ElevatedButton.icon(
-//                 onPressed: _audioUrl != null
-//                     ? () => _togglePlayback(_currentIndex)
-//                     : null,
-//                 icon: Icon(_isPlaying[_currentIndex]
-//                     ? Icons.pause_circle
-//                     : Icons.play_circle),
-//                 label: const Text("Play Slide"),
-//                 style: ElevatedButton.styleFrom(
-//                   backgroundColor: Colors.purple,
-//                   foregroundColor: Colors.white,
-//                 ),
-//               ),
-//               ElevatedButton.icon(
-//                 onPressed: _audioUrl != null
-//                     ? () => AudioPlayer().play(UrlSource(_audioUrl!))
-//                     : null,
-//                 icon: const Icon(Icons.queue_music),
-//                 label: const Text("Play Full"),
-//                 style: ElevatedButton.styleFrom(
-//                   backgroundColor: Colors.blue,
-//                   foregroundColor: Colors.white,
-//                 ),
-//               ),
-//               IconButton(
-//                 onPressed: _audioUrl != null ? _downloadAudioFile : null,
-//                 icon: const Icon(Icons.download),
-//                 color: Colors.green,
-//                 tooltip: "Download Full Audio",
-//               ),
-//             ],
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       backgroundColor: Colors.white,
-//       appBar: AppBar(
-//         backgroundColor: const Color(0xFFDDF1FF),
-//         elevation: 0,
-//         leading: IconButton(
-//           icon: const Icon(Icons.arrow_back, color: Colors.purple),
-//           onPressed: () => Navigator.pop(context),
-//         ),
-//         title: Image.asset('assets/images/audify_logo.png', height: 40),
-//         centerTitle: true,
-//         actions: [
-//           if (_audioUrl != null)
-//             IconButton(
-//               icon: const Icon(Icons.download, color: Colors.green),
-//               onPressed: _downloadAudioFile,
-//             ),
-//         ],
-//       ),
-//       body: _isLoading && _slideResults.isEmpty
-//           ? const Center(child: CircularProgressIndicator())
-//           : Column(
-//               children: [
-//                 Expanded(
-//                   child: _slideResults.isEmpty
-//                       ? const Center(child: Text("No slides available."))
-//                       : SingleChildScrollView(
-//                           child: _buildSlideCard(_currentIndex),
-//                         ),
-//                 ),
-//                 _buildControlButtons(),
-//               ],
-//             ),
-//     );
-//   }
-// }
-
-// ignore_for_file: prefer_final_fields, avoid_print, use_build_context_synchronously, sized_box_for_whitespace
-
-//new: 16/5/25
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -349,7 +40,7 @@ class _AudioScreenState extends State<AudioScreen> {
   bool _isGeneratingFullAudio = true;
   int _currentIndex = 0;
   StreamSubscription<String>? _subscription;
-
+  int _currentGeneratingIndex = 0;
   final AudioPlayer _fullAudioPlayer = AudioPlayer();
   bool _isFullAudioPlaying = false;
 
@@ -420,26 +111,30 @@ class _AudioScreenState extends State<AudioScreen> {
                     setState(() {
                       _audioUrl = decoded["audio_url"];
                     });
-                    // Show SnackBar once when full audio is ready
+
                     if (!_notifiedAudioReady) {
                       _notifiedAudioReady = true;
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            "Full audio has been generated successfully!",
-                          ),
-                          duration: Duration(seconds: 3),
-                        ),
+                        const SnackBar(content: Text("Full audio has been generated successfully!")),
                       );
                     }
                   } else {
+                    //to avoid extra slide
+                    if (_slideResults.length >= widget.slideTexts.length) return;
+
                     setState(() {
                       _slideResults.add({
                         "original_text": decoded["original_text"] ?? "",
                         "narrated_text": decoded["narrated_text"] ?? "",
                         "translated_text": decoded["translated_text"] ?? "",
                       });
+
+                      _currentGeneratingIndex++;
                     });
+                    assert(
+                      _slideResults.length <= widget.slideTexts.length,
+                      'Received more slides than expected!',
+                    );
                   }
                 } catch (e) {
                   print("Error decoding line: $e");
@@ -548,9 +243,14 @@ class _AudioScreenState extends State<AudioScreen> {
   Widget _buildTopControls() {
     String statusText = "";
     if (_isGeneratingFullAudio) {
-      statusText =
-          "Audio is generating (Slide ${_slideResults.length} / ${widget.slideTexts.length})";
-    } else if (_audioUrl != null) {
+      final totalSlides = widget.slideTexts.length;
+      final current = (_currentGeneratingIndex < totalSlides)
+        ? _currentGeneratingIndex + 1
+        : totalSlides;
+        
+      statusText = "Audio is generating (Slide $current / $totalSlides)";
+    }
+    else if (_audioUrl != null) {
       statusText = "Full audio is generated successfully";
     }
 
@@ -698,21 +398,77 @@ class _AudioScreenState extends State<AudioScreen> {
         backgroundColor: const Color(0xFFDDF1FF),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.home, color: Colors.purple),
-          tooltip: "Go to Home",
-          onPressed: () {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const UploadSlideScreen(),
-              ),
-              (Route<dynamic> route) => false,
+          icon: const Icon(Icons.arrow_back, color: Colors.purple),
+          tooltip: "Back to Customization",
+          onPressed: () async {
+            final shouldGoBack = await showDialog<bool>(
+              context: context,
+              builder:
+                  (context) => AlertDialog(
+                    title: const Text("Go Back?"),
+                    content: const Text(
+                      "Any unsaved progress will be lost. Do you want to go back?",
+                    ),
+                    actions: [
+                      TextButton(
+                        child: const Text("Cancel"),
+                        onPressed: () => Navigator.pop(context, false),
+                      ),
+                      ElevatedButton(
+                        child: const Text("Yes, go back"),
+                        onPressed: () => Navigator.pop(context, true),
+                      ),
+                    ],
+                  ),
             );
+
+            if (shouldGoBack == true) {
+              Navigator.pop(context); // Go back to user_customization.dart
+            }
           },
         ),
         title: Image.asset('assets/images/audify_logo.png', height: 40),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.home, color: Colors.purple),
+            tooltip: "Go to Home",
+            onPressed: () async {
+              final shouldLeave = await showDialog<bool>(
+                context: context,
+                builder:
+                    (context) => AlertDialog(
+                      title: const Text("Return to Home?"),
+                      content: const Text(
+                        "Any unsaved progress will be lost. Do you want to continue?",
+                      ),
+                      actions: [
+                        TextButton(
+                          child: const Text("Cancel"),
+                          onPressed: () => Navigator.pop(context, false),
+                        ),
+                        ElevatedButton(
+                          child: const Text("Yes, go home"),
+                          onPressed: () => Navigator.pop(context, true),
+                        ),
+                      ],
+                    ),
+              );
+
+              if (shouldLeave == true) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const UploadSlideScreen(),
+                  ),
+                  (Route<dynamic> route) => false,
+                );
+              }
+            },
+          ),
+        ],
       ),
+
       body:
           _isLoading && _slideResults.isEmpty
               ? const Center(child: CircularProgressIndicator())
