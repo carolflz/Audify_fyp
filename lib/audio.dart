@@ -115,12 +115,18 @@ class _AudioScreenState extends State<AudioScreen> {
                     if (!_notifiedAudioReady) {
                       _notifiedAudioReady = true;
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Full audio has been generated successfully!")),
+                        const SnackBar(
+                          content: Text(
+                            "Full audio has been generated successfully!",
+                          ),
+                        ),
                       );
                     }
                   } else {
                     //to avoid extra slide
-                    if (_slideResults.length >= widget.slideTexts.length) return;
+                    if (_slideResults.length >= widget.slideTexts.length)
+                      // ignore: curly_braces_in_flow_control_structures
+                      return;
 
                     setState(() {
                       _slideResults.add({
@@ -244,13 +250,13 @@ class _AudioScreenState extends State<AudioScreen> {
     String statusText = "";
     if (_isGeneratingFullAudio) {
       final totalSlides = widget.slideTexts.length;
-      final current = (_currentGeneratingIndex < totalSlides)
-        ? _currentGeneratingIndex + 1
-        : totalSlides;
-        
+      final current =
+          (_currentGeneratingIndex < totalSlides)
+              ? _currentGeneratingIndex + 1
+              : totalSlides;
+
       statusText = "Audio is generating (Slide $current / $totalSlides)";
-    }
-    else if (_audioUrl != null) {
+    } else if (_audioUrl != null) {
       statusText = "Full audio is generated successfully";
     }
 
